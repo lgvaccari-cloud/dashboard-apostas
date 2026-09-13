@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Apostas</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">B</span>
+        <div>
+          <div class="brand-name">Painel</div>
+          <div class="brand-sub">Gestão de banca</div>
+        </div>
+      </div>
+      <nav class="side-nav">
+        <div class="side-item active">Visão geral</div>
+      </nav>
+      <a class="logout" href="{{ url_for('logout') }}">Sair</a>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow" id="today-label"></div>
+          <h1 id="greeting">Carregando...</h1>
+          <p class="subtitle">Valores em unidades.</p>
+        </div>
+        <button class="refresh-btn" id="refresh-btn" title="Atualizar">&#8635;</button>
+      </header>
+
+      <div class="filters-bar">
+        <span class="filters-label">Filtro por tipster</span>
+        <div id="tipster-chips" class="chips"></div>
+        <button id="clear-filters" class="clear-link" style="display:none">Limpar filtro</button>
+      </div>
+
+      <div id="error-box" class="error-box" style="display:none"></div>
+
+      <section class="cards-row">
+        <div class="card card-highlight">
+          <div class="card-head">
+            <span class="card-label">Resultado líquido</span>
+          </div>
+          <div class="card-value" id="metric-liquido">—</div>
+          <div class="card-foot" id="metric-liquido-foot">—</div>
+        </div>
+        <div
