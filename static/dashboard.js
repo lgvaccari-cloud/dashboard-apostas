@@ -1,6 +1,11 @@
+const USER_NAME = "Luís";
+const STAKE_BASE = window.STAKE_BASE || 1000;
+
 let ALL_BETS = [];
 let ACTIVE_TIPSTER = null;
 let chartInstance = null;
+let CURRENT_VIEW = "geral";
+let SHOW_BRL = false;
 
 const RESOLVED_RESULTS = ["green", "red", "void"];
 
@@ -8,6 +13,17 @@ function fmtUnits(n, sign) {
   const s = n.toFixed(2).replace(".", ",");
   if (sign && n > 0) return `+${s}u`;
   return `${s}u`;
+}
+
+function fmtBRL(n, sign) {
+  const s = Math.abs(n).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const signChar = sign && n > 0 ? "+" : (n < 0 ? "-" : "");
+  return `${signChar}R$ ${s}`;
+}
+
+function fmtValue(n, sign) {
+  if (SHOW_BRL) return fmtBRL(n * STAKE_BASE, sign);
+  return fmtUnits(n, sign);
 }
 
 function fmtPct(n) {
@@ -28,8 +44,19 @@ function setToday() {
 
   const hour = now.getHours();
   const saud = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
-  document.getElementById("greeting").textContent = saud + ".";
+  document.getElementById("greeting").textContent = `${saud}, ${USER_NAME}.`;
 }
+
+function setCurrency(showBRL) {
+  SHOW_BRL = showBRL;
+  document.getElementById("toggle-uni").classList.toggle("active", !showBRL);
+  document.getElementById("toggle-real").classList.toggle("active", showBRL);
+  document.getElementById("subtitle").textContent = showBRL ? "Valores em reais." : "Valores em unidades.";
+  renderAll();
+}
+
+document.getElementById("toggle-uni").addEventListener("click", () => setCurrency(false));
+document.getElementById("toggle-real").addEventListener("click", () => setCurrency(true));
 
 async function loadData() {
   const errorBox = document.getElementById("error-box");
@@ -71,6 +98,51 @@ document.getElementById("clear-filters").addEventListener("click", () => {
   renderAll();
 });
 
+function switchView(view) {
+  CURRENT_VIEW = view;
+  document.getElementById("view-geral").style.display = view === "geral" ? "" : "none";
+  document.getElementById("view-historico").style.display = view === "historico" ? "" : "none";
+  document.getElementById("nav-geral").classList.toggle("active", view === "geral");
+  document.getElementById("nav-historico").classList.toggle("active", view === "historico");
+  if (view === "historico") renderHistorico();
+}
+
+document.getElementById("nav-geral").addEventListener("click", () => switchView("geral"));
+document.getElementById("nav-historico").addEventListener("click", () => switchView("historico"));
+
+function resultTag(resultado) {
+  const r = (resultado || "").toLowerCase();
+  if (r === "green") return `<span class="result-tag green">Green</span>`;
+  if (r === "red") return `<span class="result-tag red">Red</span>`;
+  if (r === "void") return `<span class="result-tag void">Void</span>`;
+  return `<span class="result-tag pending">Pendente</span>`;
+}
+
+function renderHistorico() {
+  const tbody = document.getElementById("bets-table-body");
+  if (!tbody) return;
+  const bets = currentBets()
+    .slice()
+    .sort((a, b) => (b.data_iso || "").localeCompare(a.data_iso || ""));
+
+  tbody.innerHTML = bets.map(b => {
+    const uniClass = b.lucro_uni > 0 ? "positive" : b.lucro_uni < 0 ? "negative" : "";
+    return `
+      <tr>
+        <td>${b.data || "—"}</td>
+        <td>${b.casa || "—"}</td>
+        <td>${b.tipster || "—"}</td>
+        <td>${b.aposta || "—"}</td>
+        <td>${b.mercado || "—"}</td>
+        <td>${b.odd ? b.odd.toFixed(3).replace(".", ",") : "—"}</td>
+        <td>${b.stake ? fmtValue(b.stake, false) : "—"}</td>
+        <td>${resultTag(b.resultado)}</td>
+        <td class="uni-cell ${uniClass}">${isResolved(b) ? fmtValue(b.lucro_uni, true) : "—"}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
 function currentBets() {
   if (!ACTIVE_TIPSTER) return ALL_BETS;
   return ALL_BETS.filter(b => b.tipster === ACTIVE_TIPSTER);
@@ -86,17 +158,17 @@ function renderAll() {
   const volumeApostadoResolved = resolved.reduce((s, b) => s + b.stake, 0);
   const roi = volumeApostadoResolved > 0 ? (resultadoLiquido / volumeApostadoResolved) * 100 : 0;
 
-  document.getElementById("metric-liquido").textContent = fmtUnits(resultadoLiquido, true);
+  document.getElementById("metric-liquido").textContent = fmtValue(resultadoLiquido, true);
   document.getElementById("metric-liquido-foot").textContent =
-    `ROI sobre ${volumeApostadoResolved.toFixed(2).replace(".", ",")}u resolvido`;
+    `ROI sobre ${fmtValue(volumeApostadoResolved, false)} resolvido`;
 
   // Em aberto
   const emAberto = pending.reduce((s, b) => s + b.stake, 0);
-  document.getElementById("metric-aberto").textContent = fmtUnits(emAberto, false);
+  document.getElementById("metric-aberto").textContent = fmtValue(emAberto, false);
   document.getElementById("metric-aberto-foot").textContent = `${pending.length} pendentes`;
 
   // Volume apostado
-  document.getElementById("metric-volume").textContent = fmtUnits(volumeApostadoResolved, false);
+  document.getElementById("metric-volume").textContent = fmtValue(volumeApostadoResolved, false);
   document.getElementById("metric-volume-foot").textContent = `${resolved.length} resolvidas`;
 
   // Lucro / prejuízo bruto
@@ -105,9 +177,9 @@ function renderAll() {
   const lucroBruto = ganhos.reduce((s, b) => s + b.lucro_uni, 0);
   const prejuizoBruto = Math.abs(perdas.reduce((s, b) => s + b.lucro_uni, 0));
 
-  document.getElementById("metric-lucro").textContent = fmtUnits(lucroBruto, false);
+  document.getElementById("metric-lucro").textContent = fmtValue(lucroBruto, false);
   document.getElementById("metric-lucro-foot").textContent = `${ganhos.length} com lucro`;
-  document.getElementById("metric-prejuizo").textContent = fmtUnits(prejuizoBruto, false);
+  document.getElementById("metric-prejuizo").textContent = fmtValue(prejuizoBruto, false);
   document.getElementById("metric-prejuizo-foot").textContent = `${perdas.length} com prejuízo`;
 
   // Taxa de acerto (green vs red, void fora da conta)
@@ -125,7 +197,7 @@ function renderAll() {
   roiPill.textContent = fmtPct(roi);
   roiPill.className = "side-pill" + (roi < 0 ? " negative" : "");
   document.getElementById("metric-roi-foot").textContent =
-    `Sobre ${volumeApostadoResolved.toFixed(2).replace(".", ",")}u resolvido`;
+    `Sobre ${fmtValue(volumeApostadoResolved, false)} resolvido`;
 
   // Odd média (todas as apostas filtradas, com odd > 0)
   const comOdd = bets.filter(b => b.odd > 0);
@@ -144,7 +216,7 @@ function renderAll() {
   });
   document.getElementById("metric-melhor-tipster").textContent = melhorTipster || "—";
   document.getElementById("metric-melhor-tipster-foot").textContent =
-    melhorTipster ? `${fmtUnits(melhorValor, true)} de resultado` : "Sem dados suficientes";
+    melhorTipster ? `${fmtValue(melhorValor, true)} de resultado` : "Sem dados suficientes";
 
   document.getElementById("side-filtered").textContent =
     ACTIVE_TIPSTER ? `Filtrado: ${ACTIVE_TIPSTER}` : "Todas as apostas";
@@ -152,6 +224,7 @@ function renderAll() {
     ACTIVE_TIPSTER ? `Resultado acumulado (${ACTIVE_TIPSTER})` : "Resultado acumulado";
 
   renderChart(resolved);
+  renderHistorico();
 }
 
 function renderChart(resolvedBets) {
@@ -188,8 +261,12 @@ function renderChart(resolvedBets) {
   });
 
   document.getElementById("chart-summary").textContent = dias.length
-    ? `${resolvedBets.length} apostas em ${dias.length} dias · pico ${fmtUnits(pico, true)} · maior queda -${maiorQueda.toFixed(2).replace(".", ",")}u · fim ${fmtUnits(fim, true)}`
+    ? `${resolvedBets.length} apostas em ${dias.length} dias · pico ${fmtValue(pico, true)} · maior queda ${fmtValue(-maiorQueda, false)} · fim ${fmtValue(fim, true)}`
     : "Sem apostas resolvidas nesse filtro ainda.";
+
+  // valores exibidos no gráfico já convertidos, se estiver em modo R$
+  const diarioDisplay = diarioSerie.map(v => SHOW_BRL ? v * STAKE_BASE : v);
+  const acumuladoDisplay = acumuladoSerie.map(v => SHOW_BRL ? v * STAKE_BASE : v);
 
   const ctx = document.getElementById("results-chart").getContext("2d");
   if (chartInstance) chartInstance.destroy();
@@ -201,8 +278,8 @@ function renderChart(resolvedBets) {
         {
           type: "bar",
           label: "Resultado do dia",
-          data: diarioSerie,
-          backgroundColor: diarioSerie.map(v => v >= 0 ? "#8bc34a" : "#e2453c"),
+          data: diarioDisplay,
+          backgroundColor: diarioDisplay.map(v => v >= 0 ? "#8bc34a" : "#e2453c"),
           borderRadius: 4,
           order: 2,
           yAxisID: "y",
@@ -210,7 +287,7 @@ function renderChart(resolvedBets) {
         {
           type: "line",
           label: "Acumulado",
-          data: acumuladoSerie,
+          data: acumuladoDisplay,
           borderColor: "#6fa72e",
           backgroundColor: "rgba(111,167,46,0.12)",
           fill: true,
@@ -229,12 +306,19 @@ function renderChart(resolvedBets) {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: (item) => `${item.dataset.label}: ${fmtUnits(item.raw, true)}`,
+            label: (item) => `${item.dataset.label}: ${SHOW_BRL ? fmtBRL(item.raw, true) : fmtUnits(item.raw, true)}`,
           },
         },
       },
       scales: {
-        y: { grid: { color: "#eef1f6" }, ticks: { callback: (v) => `${v}u` } },
+        y: {
+          grid: { color: "#eef1f6" },
+          ticks: {
+            callback: (v) => SHOW_BRL
+              ? `R$ ${Number(v).toLocaleString("pt-BR")}`
+              : `${v}u`,
+          },
+        },
         x: { grid: { display: false } },
       },
     },
