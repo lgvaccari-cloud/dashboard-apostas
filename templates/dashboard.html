@@ -40,9 +40,16 @@
             <button class="toggle-btn active" id="toggle-uni">Unidades</button>
             <button class="toggle-btn" id="toggle-real">R$</button>
           </div>
+          <button class="dark-toggle-btn" id="toggle-dark" title="Modo noturno">🌙</button>
           <button class="refresh-btn" id="refresh-btn" title="Atualizar">&#8635;</button>
         </div>
       </header>
+
+      <div class="filters-bar">
+        <span class="filters-label">Filtro por mês</span>
+        <div id="mes-chips" class="chips"></div>
+        <button id="clear-mes" class="clear-link" style="display:none">Limpar filtro</button>
+      </div>
 
       <div class="filters-bar" id="tipster-filter-bar" style="display:none">
         <span class="filters-label">Filtro por tipster</span>
@@ -50,10 +57,10 @@
         <button id="clear-filters" class="clear-link" style="display:none">Limpar filtro</button>
       </div>
 
-      <div class="filters-bar">
-        <span class="filters-label">Filtro por mês</span>
-        <div id="mes-chips" class="chips"></div>
-        <button id="clear-mes" class="clear-link" style="display:none">Limpar filtro</button>
+      <div class="active-filters-bar" id="active-filters-bar">
+        <span class="active-filters-label">▽ FILTROS ATIVOS</span>
+        <div id="active-filter-chips" class="active-chips"></div>
+        <button id="clear-all-filters" class="clear-link-right">Limpar filtros</button>
       </div>
 
       <div id="error-box" class="error-box" style="display:none"></div>
@@ -67,7 +74,7 @@
           <div class="card-value" id="metric-liquido">—</div>
           <div class="card-foot" id="metric-liquido-foot">—</div>
         </div>
-        <div class="card">
+        <div class="card card-clickable" id="card-aberto" title="Ver e resolver apostas pendentes">
           <div class="card-head"><span class="card-label">Em aberto</span></div>
           <div class="card-value" id="metric-aberto">—</div>
           <div class="card-foot" id="metric-aberto-foot">—</div>
@@ -135,6 +142,10 @@
       </div>
 
       <div id="view-historico" style="display:none">
+        <div class="pending-banner" id="pending-banner">
+          Mostrando só as apostas pendentes.
+          <button id="clear-pending-filter" class="clear-link" style="display:inline">Ver todas</button>
+        </div>
         <div class="card table-card">
           <table class="bets-table">
             <thead>
@@ -149,6 +160,7 @@
                 <th>Stake</th>
                 <th>Resultado</th>
                 <th>Uni</th>
+                <th>Ações</th>
               </tr>
             </thead>
             <tbody id="bets-table-body"></tbody>
