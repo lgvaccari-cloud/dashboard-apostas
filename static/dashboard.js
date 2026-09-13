@@ -78,7 +78,15 @@ async function loadData() {
 }
 
 function renderChips() {
-  const tipsters = [...new Set(ALL_BETS.map(b => b.tipster).filter(Boolean))].sort();
+  const bar = document.getElementById("tipster-filter-bar");
+  if (!ACTIVE_MES) {
+    bar.style.display = "none";
+    return;
+  }
+  bar.style.display = "";
+
+  const betsDoMes = ALL_BETS.filter(b => b.mes === ACTIVE_MES);
+  const tipsters = [...new Set(betsDoMes.map(b => b.tipster).filter(Boolean))].sort();
   const container = document.getElementById("tipster-chips");
   container.innerHTML = "";
   tipsters.forEach(t => {
@@ -112,7 +120,9 @@ function renderMesChips() {
     chip.textContent = m;
     chip.onclick = () => {
       ACTIVE_MES = (ACTIVE_MES === m) ? null : m;
+      ACTIVE_TIPSTER = null; // a lista de tipsters muda de mês pra mês
       renderMesChips();
+      renderChips();
       renderAll();
     };
     container.appendChild(chip);
@@ -122,7 +132,9 @@ function renderMesChips() {
 
 document.getElementById("clear-mes").addEventListener("click", () => {
   ACTIVE_MES = null;
+  ACTIVE_TIPSTER = null;
   renderMesChips();
+  renderChips();
   renderAll();
 });
 
