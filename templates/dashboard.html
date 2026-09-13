@@ -49,4 +49,74 @@
           <div class="card-value" id="metric-liquido">—</div>
           <div class="card-foot" id="metric-liquido-foot">—</div>
         </div>
-        <div
+                <div class="card">
+          <div class="card-head"><span class="card-label">Em aberto</span></div>
+          <div class="card-value" id="metric-aberto">—</div>
+          <div class="card-foot" id="metric-aberto-foot">—</div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-label">Volume apostado</span></div>
+          <div class="card-value" id="metric-volume">—</div>
+          <div class="card-foot" id="metric-volume-foot">—</div>
+        </div>
+      </section>
+
+      <section class="cards-row">
+        <div class="card">
+          <div class="card-head"><span class="card-label">Lucro bruto</span></div>
+          <div class="card-value positive" id="metric-lucro">—</div>
+          <div class="card-foot" id="metric-lucro-foot">—</div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-label">Prejuízo bruto</span></div>
+          <div class="card-value negative" id="metric-prejuizo">—</div>
+          <div class="card-foot" id="metric-prejuizo-foot">—</div>
+        </div>
+      </section>
+
+      <section class="bottom-row">
+        <div class="card chart-card">
+          <div class="card-head-block">
+            <h2 id="chart-title">Resultado acumulado</h2>
+            <p class="chart-sub" id="chart-sub">Linha acumulada, barras com o resultado de cada dia</p>
+            <p class="chart-summary" id="chart-summary">—</p>
+          </div>
+          <canvas id="results-chart" height="110"></canvas>
+        </div>
+
+        <div class="card side-card">
+          <h2>Leitura do período</h2>
+          <p class="chart-sub" id="side-filtered">Todas as apostas</p>
+
+          <div class="side-metric">
+            <span class="side-label">Taxa de acerto</span>
+            <div class="side-big" id="metric-acerto">—</div>
+            <div class="progress-track"><div class="progress-fill" id="acerto-bar"></div></div>
+            <span class="side-note" id="metric-acerto-foot">—</span>
+          </div>
+
+          <div class="side-metric">
+            <span class="side-label">ROI</span>
+            <div class="side-pill" id="metric-roi">—</div>
+            <span class="side-note" id="metric-roi-foot">—</span>
+          </div>
+
+          <div class="side-metric">
+            <span class="side-label">Odd média</span>
+            <div class="side-big" id="metric-odd">—</div>
+            <span class="side-note">Todas as apostas filtradas</span>
+          </div>
+
+          <div class="side-metric">
+            <span class="side-label">Melhor tipster</span>
+            <div class="side-big" id="metric-melhor-tipster">—</div>
+            <span class="side-note" id="metric-melhor-tipster-foot">—</span>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+</body>
+</html>
