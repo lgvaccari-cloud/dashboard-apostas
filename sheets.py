@@ -59,6 +59,25 @@ def _parse_date(value):
     return None
 
 
+def _find_table_start(rows):
+    """Acha em qual (linha, coluna) começa a tabela de apostas, procurando o
+    cabeçalho "Tipster" na planilha. A planilha tem um bloco de resumo nas
+    primeiras colunas, então a tabela de apostas não começa na coluna A.
+
+    Retorna (indice_da_linha_de_dados, indice_da_coluna_data) ou (None, None)
+    se não achar.
+    """
+    for row_idx, row in enumerate(rows):
+        for col_idx, cell in enumerate(row):
+            if cell.strip().lower() == "tipster":
+                # "Data" e "Casa" ficam duas e uma coluna antes de "Tipster"
+                data_col_idx = col_idx - 2
+                if data_col_idx < 0:
+                    continue
+                return row_idx + 1, data_col_idx
+    return None, None
+
+
 def fetch_bets():
     """Lê a aba configurada e devolve uma lista de dicts, uma por aposta.
 
@@ -74,12 +93,19 @@ def fetch_bets():
     # pega tudo de uma vez (mais rápido que célula por célula)
     rows = ws.get_all_values()
 
+    data_start_row, data_col = _find_table_start(rows)
+    if data_col is None:
+        raise RuntimeError(
+            "Não encontrei o cabeçalho 'Tipster' na planilha — confira o "
+            "nome da aba (SHEET_TAB_NAME) e a estrutura das colunas."
+        )
+
     bets = []
-    for row in rows[1:]:  # pula o cabeçalho
-        if len(row) < 8:
-            continue
-        row = row + [""] * (len(COLUMNS) - len(row))  # completa colunas faltando
-        record = dict(zip(COLUMNS, row))
+    for row in rows[data_start_row:]:
+        row_slice = row[data_col:data_col + len(COLUMNS)]
+        if len(row_slice) < len(COLUMNS):
+            row_slice = row_slice + [""] * (len(COLUMNS) - len(row_slice))
+        record = dict(zip(COLUMNS, row_slice))
 
         if not record["data"].strip() and not record["casa"].strip():
             continue  # linha vazia
