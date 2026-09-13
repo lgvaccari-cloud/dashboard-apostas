@@ -40,7 +40,8 @@ def logout():
 @app.route("/")
 @login_required
 def index():
-    return render_template("dashboard.html")
+    stake_base = os.environ.get("STAKE_BASE", "1000")
+    return render_template("dashboard.html", stake_base=stake_base)
 
 
 @app.route("/api/bets")
