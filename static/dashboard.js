@@ -110,12 +110,34 @@ function switchView(view) {
 document.getElementById("nav-geral").addEventListener("click", () => switchView("geral"));
 document.getElementById("nav-historico").addEventListener("click", () => switchView("historico"));
 
+const CASA_STYLE = {
+  "bet365":      { initials: "B3", color: "#1c5c34" },
+  "betbra":      { initials: "BR", color: "#1a2b52" },
+  "bolsa":       { initials: "BR", color: "#1a2b52" },
+  "superbet":    { initials: "SU", color: "#7a1220" },
+  "betano":      { initials: "BA", color: "#e8631c" },
+  "sportingbet": { initials: "SP", color: "#1c3f7a" },
+  "1win":        { initials: "1W", color: "#1a1a1a" },
+  "betboo":      { initials: "BB", color: "#6b1f3d" },
+};
+
+function casaBadge(casa) {
+  const key = (casa || "").toLowerCase();
+  const style = CASA_STYLE[key] || { initials: (casa || "?").slice(0, 2).toUpperCase(), color: "#7a8494" };
+  return `
+    <span class="casa-cell">
+      <span class="casa-badge" style="background:${style.color}">${style.initials}</span>
+      ${casa || "—"}
+    </span>
+  `;
+}
+
 function resultTag(resultado) {
   const r = (resultado || "").toLowerCase();
-  if (r === "green") return `<span class="result-tag green">Green</span>`;
-  if (r === "red") return `<span class="result-tag red">Red</span>`;
-  if (r === "void") return `<span class="result-tag void">Void</span>`;
-  return `<span class="result-tag pending">Pendente</span>`;
+  if (r === "green") return `<span class="result-tag green">✓</span>`;
+  if (r === "red") return `<span class="result-tag red">✗</span>`;
+  if (r === "void") return `<span class="result-tag void">–</span>`;
+  return `<span class="result-tag pending">•</span>`;
 }
 
 function renderHistorico() {
@@ -130,7 +152,7 @@ function renderHistorico() {
     return `
       <tr>
         <td>${b.data || "—"}</td>
-        <td>${b.casa || "—"}</td>
+        <td>${casaBadge(b.casa)}</td>
         <td>${b.tipster || "—"}</td>
         <td>${b.aposta || "—"}</td>
         <td>${b.mercado || "—"}</td>
