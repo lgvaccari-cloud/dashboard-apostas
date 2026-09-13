@@ -4,8 +4,9 @@ from datetime import datetime
 import gspread
 from google.oauth2.service_account import Credentials
 
+# precisa de escrita agora (marcar resultado / editar apostas), não só leitura
 SCOPES = [
-    "https://www.googleapis.com/auth/spreadsheets.readonly",
+    "https://www.googleapis.com/auth/spreadsheets",
 ]
 
 # Nomes das colunas na ordem exata da planilha (A -> N)
@@ -14,6 +15,14 @@ COLUMNS = [
     "resultado", "stake", "odd", "aposta_reais", "lucro", "uni",
     "bank", "cresc_pct",
 ]
+
+# Campos que podem ser editados pelo dashboard. Os demais (aposta_reais,
+# lucro, uni, bank, cresc_pct) são fórmulas calculadas na própria planilha e
+# nunca devem ser sobrescritos.
+EDITABLE_FIELDS = {
+    "data", "casa", "tipster", "aposta", "tipo", "mercado", "resultado",
+    "stake", "odd",
+}
 
 
 def _get_client():
@@ -80,14 +89,15 @@ def _find_table_start(rows):
 
 def _parse_bets_from_rows(rows, mes_label):
     """Extrai as apostas de uma aba já lida (rows), marcando cada aposta com
-    o nome da aba de origem (mes_label). Retorna [] se a aba não tiver a
+    o nome da aba de origem (mes_label) e a linha absoluta na planilha (pra
+    dar pra editar/marcar resultado depois). Retorna [] se a aba não tiver a
     tabela de apostas (sem cabeçalho 'Tipster')."""
     data_start_row, data_col = _find_table_start(rows)
     if data_col is None:
         return []
 
     bets = []
-    for row in rows[data_start_row:]:
+    for i, row in enumerate(rows[data_start_row:]):
         row_slice = row[data_col:data_col + len(COLUMNS)]
         if len(row_slice) < len(COLUMNS):
             row_slice = row_slice + [""] * (len(COLUMNS) - len(row_slice))
@@ -97,9 +107,11 @@ def _parse_bets_from_rows(rows, mes_label):
             continue  # linha vazia
 
         parsed_date = _parse_date(record["data"])
+        sheet_row = data_start_row + i + 1  # linha absoluta na planilha (1-based)
 
         bet = {
             "mes": mes_label,
+            "row": sheet_row,
             "data": record["data"].strip(),
             "data_iso": parsed_date.isoformat() if parsed_date else None,
             "casa": record["casa"].strip(),
@@ -144,3 +156,33 @@ def fetch_bets():
         )
 
     return all_bets
+
+
+def update_bet(mes, row, updates):
+    """Atualiza um ou mais campos de uma aposta já existente, escrevendo
+    direto na planilha (aba `mes`, linha `row`).
+
+    `updates` é um dict {campo: valor} usando os mesmos nomes de COLUMNS
+    (ex: {"resultado": "Green"}, ou {"odd": "1,85", "stake": "0,75"}).
+    Campos que são fórmula na planilha (aposta_reais, lucro, uni, bank,
+    cresc_pct) são ignorados silenciosamente, nunca sobrescritos.
+    """
+    client = _get_client()
+    sheet_id = os.environ["SHEET_ID"]
+    sh = client.open_by_key(sheet_id)
+    ws = sh.worksheet(mes)
+
+    # relê o cabeçalho dessa aba pra saber exatamente em qual coluna cada
+    # campo cai (auto-corrige se a planilha for reorganizada)
+    rows = ws.get_all_values()
+    _, data_col = _find_table_start(rows)
+    if data_col is None:
+        raise RuntimeError(f"Não encontrei a tabela de apostas na aba '{mes}'.")
+
+    for field, value in updates.items():
+        if field not in EDITABLE_FIELDS:
+            continue
+        col_idx = COLUMNS.index(field)
+        col_num = data_col + col_idx + 1  # 1-based
+        cell_a1 = gspread.utils.rowcol_to_a1(row, col_num)
+        ws.update(range_name=cell_a1, values=[[value]], value_input_option="USER_ENTERED")
