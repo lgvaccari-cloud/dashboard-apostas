@@ -124,6 +124,8 @@ def fetch_bets():
             "stake": _to_float(record["stake"]),
             "odd": _to_float(record["odd"]),
             "lucro_uni": _to_float(record["uni"]),
+            "stake_reais": _to_float(record["aposta_reais"]),
+            "lucro_reais": _to_float(record["lucro"]),
         }
         bets.append(bet)
 
