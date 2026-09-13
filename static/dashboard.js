@@ -1,13 +1,25 @@
 const USER_NAME = "Luís";
+const MESES_PT = [
+  "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+  "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+];
 
 let ALL_BETS = [];
 let ACTIVE_TIPSTER = null;
 let ACTIVE_MES = null;
+let ONLY_PENDING = false;
+let AUTO_MES_APPLIED = false;
 let chartInstance = null;
 let CURRENT_VIEW = "geral";
 let SHOW_BRL = false;
+let EDITING_IDX = null;
+let CURRENT_HISTORICO_BETS = [];
 
 const RESOLVED_RESULTS = ["green", "red", "void"];
+
+function esc(value) {
+  return String(value ?? "").replace(/"/g, "&quot;");
+}
 
 function fmtUnits(n, sign) {
   const s = n.toFixed(2).replace(".", ",");
@@ -49,6 +61,19 @@ function setToday() {
   document.getElementById("greeting").textContent = `${saud}, ${USER_NAME}.`;
 }
 
+// ---------- Modo noturno ----------
+function setDarkMode(on) {
+  document.body.classList.toggle("dark-mode", on);
+  document.getElementById("toggle-dark").textContent = on ? "☀️" : "🌙";
+  try { localStorage.setItem("painel_dark_mode", on ? "1" : "0"); } catch (e) {}
+  if (ALL_BETS.length) renderAll(); // recria o gráfico com as cores certas
+}
+
+document.getElementById("toggle-dark").addEventListener("click", () => {
+  setDarkMode(!document.body.classList.contains("dark-mode"));
+});
+
+// ---------- Unidades / Reais ----------
 function setCurrency(showBRL) {
   SHOW_BRL = showBRL;
   document.getElementById("toggle-uni").classList.toggle("active", !showBRL);
@@ -60,6 +85,7 @@ function setCurrency(showBRL) {
 document.getElementById("toggle-uni").addEventListener("click", () => setCurrency(false));
 document.getElementById("toggle-real").addEventListener("click", () => setCurrency(true));
 
+// ---------- Carregar dados ----------
 async function loadData() {
   const errorBox = document.getElementById("error-box");
   errorBox.style.display = "none";
@@ -68,8 +94,10 @@ async function loadData() {
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || "Erro desconhecido");
     ALL_BETS = data.bets;
-    renderChips();
+    EDITING_IDX = null;
+    tryAutoSelectMonth();
     renderMesChips();
+    renderChips();
     renderAll();
   } catch (err) {
     errorBox.style.display = "block";
@@ -77,6 +105,16 @@ async function loadData() {
   }
 }
 
+function tryAutoSelectMonth() {
+  if (AUTO_MES_APPLIED) return;
+  AUTO_MES_APPLIED = true;
+  const nomeAtual = MESES_PT[new Date().getMonth()];
+  const meses = [...new Set(ALL_BETS.map(b => b.mes).filter(Boolean))];
+  const encontrado = meses.find(m => m.toLowerCase().includes(nomeAtual));
+  if (encontrado) ACTIVE_MES = encontrado;
+}
+
+// ---------- Chips de tipster (só aparecem com um mês selecionado) ----------
 function renderChips() {
   const bar = document.getElementById("tipster-filter-bar");
   if (!ACTIVE_MES) {
@@ -109,6 +147,7 @@ document.getElementById("clear-filters").addEventListener("click", () => {
   renderAll();
 });
 
+// ---------- Chips de mês ----------
 function renderMesChips() {
   // mantém a ordem em que os meses aparecem na planilha (ordem das abas)
   const meses = [...new Set(ALL_BETS.map(b => b.mes).filter(Boolean))];
@@ -138,6 +177,44 @@ document.getElementById("clear-mes").addEventListener("click", () => {
   renderAll();
 });
 
+// ---------- Barra "Filtros ativos" ----------
+function renderActiveFiltersBar() {
+  const bar = document.getElementById("active-filters-bar");
+  const container = document.getElementById("active-filter-chips");
+  const filtros = [];
+  if (ACTIVE_MES) filtros.push({ label: `Mês: ${ACTIVE_MES}`, clear: () => { ACTIVE_MES = null; ACTIVE_TIPSTER = null; } });
+  if (ACTIVE_TIPSTER) filtros.push({ label: `Tipster: ${ACTIVE_TIPSTER}`, clear: () => { ACTIVE_TIPSTER = null; } });
+
+  if (!filtros.length) {
+    bar.style.display = "none";
+    return;
+  }
+  bar.style.display = "flex";
+  container.innerHTML = "";
+  filtros.forEach(f => {
+    const chip = document.createElement("span");
+    chip.className = "active-chip";
+    chip.innerHTML = `${f.label} <button type="button">✕</button>`;
+    chip.querySelector("button").onclick = () => {
+      f.clear();
+      renderMesChips();
+      renderChips();
+      renderActiveFiltersBar();
+      renderAll();
+    };
+    container.appendChild(chip);
+  });
+}
+
+document.getElementById("clear-all-filters").addEventListener("click", () => {
+  ACTIVE_MES = null;
+  ACTIVE_TIPSTER = null;
+  renderMesChips();
+  renderChips();
+  renderAll();
+});
+
+// ---------- Navegação entre visões ----------
 function switchView(view) {
   CURRENT_VIEW = view;
   document.getElementById("view-geral").style.display = view === "geral" ? "" : "none";
@@ -148,8 +225,23 @@ function switchView(view) {
 }
 
 document.getElementById("nav-geral").addEventListener("click", () => switchView("geral"));
-document.getElementById("nav-historico").addEventListener("click", () => switchView("historico"));
+document.getElementById("nav-historico").addEventListener("click", () => {
+  ONLY_PENDING = false;
+  switchView("historico");
+});
 
+document.getElementById("card-aberto").addEventListener("click", () => {
+  ONLY_PENDING = true;
+  EDITING_IDX = null;
+  switchView("historico");
+});
+
+document.getElementById("clear-pending-filter").addEventListener("click", () => {
+  ONLY_PENDING = false;
+  renderHistorico();
+});
+
+// ---------- Selos de casa ----------
 const CASA_STYLE = {
   "bet365":      { initials: "B3", color: "#1c5c34" },
   "betbra":      { initials: "BR", color: "#1a2b52" },
@@ -180,15 +272,120 @@ function resultTag(resultado) {
   return `<span class="result-tag pending">•</span>`;
 }
 
+// ---------- Marcar resultado (Green/Red/Void) ----------
+async function resolveBetByIndex(idx, resultado) {
+  const bet = CURRENT_HISTORICO_BETS[idx];
+  if (!bet) return;
+  try {
+    const res = await fetch("/api/resolve", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mes: bet.mes, row: bet.row, resultado }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Erro ao marcar resultado");
+    await loadData();
+    switchView("historico");
+  } catch (err) {
+    alert("Não consegui marcar o resultado: " + err.message);
+  }
+}
+
+// ---------- Editar uma aposta ----------
+function startEdit(idx) {
+  EDITING_IDX = idx;
+  renderHistorico();
+}
+
+function cancelEdit() {
+  EDITING_IDX = null;
+  renderHistorico();
+}
+
+async function saveEdit(idx) {
+  const bet = CURRENT_HISTORICO_BETS[idx];
+  if (!bet) return;
+  const updates = {
+    data: document.getElementById(`edit-data-${idx}`).value,
+    casa: document.getElementById(`edit-casa-${idx}`).value,
+    tipster: document.getElementById(`edit-tipster-${idx}`).value,
+    aposta: document.getElementById(`edit-aposta-${idx}`).value,
+    mercado: document.getElementById(`edit-mercado-${idx}`).value,
+    odd: document.getElementById(`edit-odd-${idx}`).value,
+    stake: document.getElementById(`edit-stake-${idx}`).value,
+    resultado: document.getElementById(`edit-resultado-${idx}`).value,
+  };
+  try {
+    const res = await fetch("/api/update_bet", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mes: bet.mes, row: bet.row, updates }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Erro ao salvar");
+    EDITING_IDX = null;
+    await loadData();
+    switchView("historico");
+  } catch (err) {
+    alert("Não consegui salvar: " + err.message);
+  }
+}
+
+// ---------- Tabela de histórico ----------
 function renderHistorico() {
   const tbody = document.getElementById("bets-table-body");
   if (!tbody) return;
+
   const bets = currentBets()
     .slice()
     .sort((a, b) => (b.data_iso || "").localeCompare(a.data_iso || ""));
 
-  tbody.innerHTML = bets.map(b => {
+  CURRENT_HISTORICO_BETS = bets;
+
+  document.getElementById("pending-banner").style.display = ONLY_PENDING ? "flex" : "none";
+
+  tbody.innerHTML = bets.map((b, idx) => {
     const uniClass = b.lucro_uni > 0 ? "positive" : b.lucro_uni < 0 ? "negative" : "";
+    const editing = EDITING_IDX === idx;
+
+    if (editing) {
+      return `
+        <tr>
+          <td>${b.mes || "—"}</td>
+          <td><input class="edit-input small" id="edit-data-${idx}" value="${esc(b.data)}"></td>
+          <td><input class="edit-input" id="edit-casa-${idx}" value="${esc(b.casa)}"></td>
+          <td><input class="edit-input" id="edit-tipster-${idx}" value="${esc(b.tipster)}"></td>
+          <td><input class="edit-input" id="edit-aposta-${idx}" value="${esc(b.aposta)}"></td>
+          <td><input class="edit-input" id="edit-mercado-${idx}" value="${esc(b.mercado)}"></td>
+          <td><input class="edit-input small" id="edit-odd-${idx}" value="${esc(b.odd ? b.odd.toFixed(3).replace(".", ",") : "")}"></td>
+          <td><input class="edit-input small" id="edit-stake-${idx}" value="${esc(b.stake ? b.stake.toFixed(4).replace(".", ",") : "")}"></td>
+          <td>
+            <select class="edit-input" id="edit-resultado-${idx}">
+              <option value="" ${!b.resultado ? "selected" : ""}>Pendente</option>
+              <option value="Green" ${b.resultado === "Green" ? "selected" : ""}>Green</option>
+              <option value="Red" ${b.resultado === "Red" ? "selected" : ""}>Red</option>
+              <option value="Void" ${b.resultado === "Void" ? "selected" : ""}>Void</option>
+            </select>
+          </td>
+          <td>—</td>
+          <td>
+            <div class="row-actions">
+              <button class="row-action-btn save" title="Salvar" onclick="saveEdit(${idx})">✓</button>
+              <button class="row-action-btn cancel" title="Cancelar" onclick="cancelEdit()">✕</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }
+
+    const resolvedCell = isResolved(b)
+      ? resultTag(b.resultado)
+      : `<div class="resolve-actions">
+           <button class="resolve-btn green" title="Green" onclick="resolveBetByIndex(${idx}, 'Green')">✓</button>
+           <button class="resolve-btn red" title="Red" onclick="resolveBetByIndex(${idx}, 'Red')">✗</button>
+           <button class="resolve-btn void" title="Void" onclick="resolveBetByIndex(${idx}, 'Void')">–</button>
+         </div>`;
+
     return `
       <tr>
         <td>${b.mes || "—"}</td>
@@ -199,8 +396,9 @@ function renderHistorico() {
         <td>${b.mercado || "—"}</td>
         <td>${b.odd ? b.odd.toFixed(3).replace(".", ",") : "—"}</td>
         <td>${b.stake ? fmtDual(b.stake, b.stake_reais, false) : "—"}</td>
-        <td>${resultTag(b.resultado)}</td>
+        <td>${resolvedCell}</td>
         <td class="uni-cell ${uniClass}">${isResolved(b) ? fmtDual(b.lucro_uni, b.lucro_reais, true) : "—"}</td>
+        <td><button class="row-action-btn" title="Editar" onclick="startEdit(${idx})">✎</button></td>
       </tr>
     `;
   }).join("");
@@ -210,15 +408,18 @@ function currentBets() {
   let result = ALL_BETS;
   if (ACTIVE_TIPSTER) result = result.filter(b => b.tipster === ACTIVE_TIPSTER);
   if (ACTIVE_MES) result = result.filter(b => b.mes === ACTIVE_MES);
+  if (ONLY_PENDING) result = result.filter(b => !isResolved(b));
   return result;
 }
 
+// ---------- Visão geral (cards + gráfico) ----------
 function renderAll() {
+  renderActiveFiltersBar();
+
   const bets = currentBets();
   const resolved = bets.filter(isResolved);
   const pending = bets.filter(b => !isResolved(b));
 
-  // Resultado líquido / ROI
   const resultadoLiquido = resolved.reduce((s, b) => s + b.lucro_uni, 0);
   const resultadoLiquidoReais = resolved.reduce((s, b) => s + b.lucro_reais, 0);
   const volumeApostadoResolved = resolved.reduce((s, b) => s + b.stake, 0);
@@ -229,17 +430,14 @@ function renderAll() {
   document.getElementById("metric-liquido-foot").textContent =
     `ROI sobre ${fmtDual(volumeApostadoResolved, volumeApostadoResolvedReais, false)} resolvido`;
 
-  // Em aberto
   const emAberto = pending.reduce((s, b) => s + b.stake, 0);
   const emAbertoReais = pending.reduce((s, b) => s + b.stake_reais, 0);
   document.getElementById("metric-aberto").textContent = fmtDual(emAberto, emAbertoReais, false);
   document.getElementById("metric-aberto-foot").textContent = `${pending.length} pendentes`;
 
-  // Volume apostado
   document.getElementById("metric-volume").textContent = fmtDual(volumeApostadoResolved, volumeApostadoResolvedReais, false);
   document.getElementById("metric-volume-foot").textContent = `${resolved.length} resolvidas`;
 
-  // Lucro / prejuízo bruto
   const ganhos = resolved.filter(b => b.lucro_uni > 0);
   const perdas = resolved.filter(b => b.lucro_uni < 0);
   const lucroBruto = ganhos.reduce((s, b) => s + b.lucro_uni, 0);
@@ -252,7 +450,6 @@ function renderAll() {
   document.getElementById("metric-prejuizo").textContent = fmtDual(prejuizoBruto, prejuizoBrutoReais, false);
   document.getElementById("metric-prejuizo-foot").textContent = `${perdas.length} com prejuízo`;
 
-  // Taxa de acerto (green vs red, void fora da conta)
   const greens = resolved.filter(b => (b.resultado || "").toLowerCase() === "green").length;
   const reds = resolved.filter(b => (b.resultado || "").toLowerCase() === "red").length;
   const decisoes = greens + reds;
@@ -262,20 +459,16 @@ function renderAll() {
   document.getElementById("acerto-bar").style.width = `${taxaAcerto}%`;
   document.getElementById("metric-acerto-foot").textContent = `${greens} positivas em ${decisoes} decisões`;
 
-  // ROI (painel lateral)
   const roiPill = document.getElementById("metric-roi");
   roiPill.textContent = fmtPct(roi);
   roiPill.className = "side-pill" + (roi < 0 ? " negative" : "");
   document.getElementById("metric-roi-foot").textContent =
     `Sobre ${fmtDual(volumeApostadoResolved, volumeApostadoResolvedReais, false)} resolvido`;
 
-  // Odd média (todas as apostas filtradas, com odd > 0)
   const comOdd = bets.filter(b => b.odd > 0);
   const oddMedia = comOdd.length > 0 ? comOdd.reduce((s, b) => s + b.odd, 0) / comOdd.length : 0;
   document.getElementById("metric-odd").textContent = comOdd.length > 0 ? oddMedia.toFixed(3).replace(".", ",") : "—";
 
-  // Melhor tipster (dentro do conjunto filtrado) — ranking sempre por unidades,
-  // mas mostra o valor exato em reais quando esse for o modo ativo
   const porTipster = {};
   const porTipsterReais = {};
   resolved.forEach(b => {
@@ -302,8 +495,8 @@ function renderAll() {
   renderHistorico();
 }
 
+// ---------- Gráfico ----------
 function renderChart(resolvedBets) {
-  // agrupa por dia (unidades e reais, em paralelo)
   const porDiaUni = {};
   const porDiaReais = {};
   resolvedBets.forEach(b => {
@@ -346,9 +539,16 @@ function renderChart(resolvedBets) {
     return `${day}/${m}`;
   });
 
-  document.getElementById("chart-summary").textContent = dias.length
-    ? `${resolvedBets.length} apostas em ${dias.length} dias · pico ${fmtDual(picoUni, picoReais, true)} · maior queda ${fmtDual(-maiorQuedaUni, -maiorQuedaReais, false)} · fim ${fmtDual(fimUni, fimReais, true)}`
-    : "Sem apostas resolvidas nesse filtro ainda.";
+  const summaryEl = document.getElementById("chart-summary");
+  if (!dias.length) {
+    summaryEl.textContent = "Sem apostas resolvidas nesse filtro ainda.";
+  } else {
+    const fimCor = (SHOW_BRL ? fimReais : fimUni) >= 0 ? "var(--green)" : "var(--red)";
+    summaryEl.innerHTML =
+      `${resolvedBets.length} apostas em ${dias.length} dias · pico <b>${fmtDual(picoUni, picoReais, false)}</b>` +
+      ` · maior queda <b style="color:var(--red)">${fmtDual(Math.abs(maiorQuedaUni), Math.abs(maiorQuedaReais), false)}</b>` +
+      ` · fim <b style="color:${fimCor}">${fmtDual(fimUni, fimReais, true)}</b>`;
+  }
 
   const diarioDisplay = SHOW_BRL ? diarioSerieReais : diarioSerieUni;
   const acumuladoDisplay = SHOW_BRL ? acumuladoSerieReais : acumuladoSerieUni;
@@ -356,7 +556,32 @@ function renderChart(resolvedBets) {
   const ctx = document.getElementById("results-chart").getContext("2d");
   if (chartInstance) chartInstance.destroy();
 
+  // desenha o valor de cada barra em cima dela (sem precisar de plugin externo)
+  const barValueLabelPlugin = {
+    id: "barValueLabels",
+    afterDatasetsDraw(chart) {
+      const meta = chart.getDatasetMeta(0);
+      const dataset = chart.data.datasets[0];
+      const c = chart.ctx;
+      c.save();
+      c.font = "bold 11px Montserrat, sans-serif";
+      c.textAlign = "center";
+      meta.data.forEach((bar, i) => {
+        const value = dataset.data[i];
+        const label = SHOW_BRL ? fmtBRL(value, true) : fmtUnits(value, true);
+        c.fillStyle = value >= 0 ? "#2e7d32" : "#c62828";
+        const y = value >= 0 ? bar.y - 6 : bar.y + 16;
+        c.fillText(label, bar.x, y);
+      });
+      c.restore();
+    },
+  };
+
+  const gridColor = document.body.classList.contains("dark-mode") ? "rgba(255,255,255,0.08)" : "#eef1f6";
+  const tickColor = document.body.classList.contains("dark-mode") ? "#8b93b3" : "#7a8494";
+
   chartInstance = new Chart(ctx, {
+    type: "bar",
     data: {
       labels,
       datasets: [
@@ -384,8 +609,10 @@ function renderChart(resolvedBets) {
         },
       ],
     },
+    plugins: [barValueLabelPlugin],
     options: {
       responsive: true,
+      layout: { padding: { top: 24 } },
       interaction: { mode: "index", intersect: false },
       plugins: {
         legend: { display: false },
@@ -397,20 +624,26 @@ function renderChart(resolvedBets) {
       },
       scales: {
         y: {
-          grid: { color: "#eef1f6" },
+          grid: { color: gridColor },
           ticks: {
+            color: tickColor,
             callback: (v) => SHOW_BRL
               ? `R$ ${Number(v).toLocaleString("pt-BR")}`
               : `${v}u`,
           },
         },
-        x: { grid: { display: false } },
+        x: { grid: { display: false }, ticks: { color: tickColor } },
       },
     },
   });
 }
 
 document.getElementById("refresh-btn").addEventListener("click", loadData);
+
+// aplica o modo noturno salvo (se houver) antes de tudo
+try {
+  setDarkMode(localStorage.getItem("painel_dark_mode") === "1");
+} catch (e) {}
 
 setToday();
 loadData();
