@@ -106,7 +106,7 @@ body {
   table-layout: fixed;
 }
 .bets-table th, .bets-table td { white-space: nowrap; }
-.bets-table th:nth-child(4), .bets-table td:nth-child(4) {
+.bets-table th:nth-child(5), .bets-table td:nth-child(5) {
   white-space: normal;
   width: 300px;
 }
