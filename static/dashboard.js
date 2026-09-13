@@ -1,5 +1,4 @@
 const USER_NAME = "Luís";
-const STAKE_BASE = window.STAKE_BASE || 1000;
 
 let ALL_BETS = [];
 let ACTIVE_TIPSTER = null;
@@ -21,9 +20,11 @@ function fmtBRL(n, sign) {
   return `${signChar}R$ ${s}`;
 }
 
-function fmtValue(n, sign) {
-  if (SHOW_BRL) return fmtBRL(n * STAKE_BASE, sign);
-  return fmtUnits(n, sign);
+// dual: recebe o valor em unidades e o valor real em reais (já exato, vindo da
+// planilha) e escolhe qual mostrar conforme o modo atual
+function fmtDual(nUni, nReais, sign) {
+  if (SHOW_BRL) return fmtBRL(nReais, sign);
+  return fmtUnits(nUni, sign);
 }
 
 function fmtPct(n) {
@@ -157,9 +158,9 @@ function renderHistorico() {
         <td>${b.aposta || "—"}</td>
         <td>${b.mercado || "—"}</td>
         <td>${b.odd ? b.odd.toFixed(3).replace(".", ",") : "—"}</td>
-        <td>${b.stake ? fmtValue(b.stake, false) : "—"}</td>
+        <td>${b.stake ? fmtDual(b.stake, b.stake_reais, false) : "—"}</td>
         <td>${resultTag(b.resultado)}</td>
-        <td class="uni-cell ${uniClass}">${isResolved(b) ? fmtValue(b.lucro_uni, true) : "—"}</td>
+        <td class="uni-cell ${uniClass}">${isResolved(b) ? fmtDual(b.lucro_uni, b.lucro_reais, true) : "—"}</td>
       </tr>
     `;
   }).join("");
@@ -177,31 +178,36 @@ function renderAll() {
 
   // Resultado líquido / ROI
   const resultadoLiquido = resolved.reduce((s, b) => s + b.lucro_uni, 0);
+  const resultadoLiquidoReais = resolved.reduce((s, b) => s + b.lucro_reais, 0);
   const volumeApostadoResolved = resolved.reduce((s, b) => s + b.stake, 0);
+  const volumeApostadoResolvedReais = resolved.reduce((s, b) => s + b.stake_reais, 0);
   const roi = volumeApostadoResolved > 0 ? (resultadoLiquido / volumeApostadoResolved) * 100 : 0;
 
-  document.getElementById("metric-liquido").textContent = fmtValue(resultadoLiquido, true);
+  document.getElementById("metric-liquido").textContent = fmtDual(resultadoLiquido, resultadoLiquidoReais, true);
   document.getElementById("metric-liquido-foot").textContent =
-    `ROI sobre ${fmtValue(volumeApostadoResolved, false)} resolvido`;
+    `ROI sobre ${fmtDual(volumeApostadoResolved, volumeApostadoResolvedReais, false)} resolvido`;
 
   // Em aberto
   const emAberto = pending.reduce((s, b) => s + b.stake, 0);
-  document.getElementById("metric-aberto").textContent = fmtValue(emAberto, false);
+  const emAbertoReais = pending.reduce((s, b) => s + b.stake_reais, 0);
+  document.getElementById("metric-aberto").textContent = fmtDual(emAberto, emAbertoReais, false);
   document.getElementById("metric-aberto-foot").textContent = `${pending.length} pendentes`;
 
   // Volume apostado
-  document.getElementById("metric-volume").textContent = fmtValue(volumeApostadoResolved, false);
+  document.getElementById("metric-volume").textContent = fmtDual(volumeApostadoResolved, volumeApostadoResolvedReais, false);
   document.getElementById("metric-volume-foot").textContent = `${resolved.length} resolvidas`;
 
   // Lucro / prejuízo bruto
   const ganhos = resolved.filter(b => b.lucro_uni > 0);
   const perdas = resolved.filter(b => b.lucro_uni < 0);
   const lucroBruto = ganhos.reduce((s, b) => s + b.lucro_uni, 0);
+  const lucroBrutoReais = ganhos.reduce((s, b) => s + b.lucro_reais, 0);
   const prejuizoBruto = Math.abs(perdas.reduce((s, b) => s + b.lucro_uni, 0));
+  const prejuizoBrutoReais = Math.abs(perdas.reduce((s, b) => s + b.lucro_reais, 0));
 
-  document.getElementById("metric-lucro").textContent = fmtValue(lucroBruto, false);
+  document.getElementById("metric-lucro").textContent = fmtDual(lucroBruto, lucroBrutoReais, false);
   document.getElementById("metric-lucro-foot").textContent = `${ganhos.length} com lucro`;
-  document.getElementById("metric-prejuizo").textContent = fmtValue(prejuizoBruto, false);
+  document.getElementById("metric-prejuizo").textContent = fmtDual(prejuizoBruto, prejuizoBrutoReais, false);
   document.getElementById("metric-prejuizo-foot").textContent = `${perdas.length} com prejuízo`;
 
   // Taxa de acerto (green vs red, void fora da conta)
@@ -219,18 +225,21 @@ function renderAll() {
   roiPill.textContent = fmtPct(roi);
   roiPill.className = "side-pill" + (roi < 0 ? " negative" : "");
   document.getElementById("metric-roi-foot").textContent =
-    `Sobre ${fmtValue(volumeApostadoResolved, false)} resolvido`;
+    `Sobre ${fmtDual(volumeApostadoResolved, volumeApostadoResolvedReais, false)} resolvido`;
 
   // Odd média (todas as apostas filtradas, com odd > 0)
   const comOdd = bets.filter(b => b.odd > 0);
   const oddMedia = comOdd.length > 0 ? comOdd.reduce((s, b) => s + b.odd, 0) / comOdd.length : 0;
   document.getElementById("metric-odd").textContent = comOdd.length > 0 ? oddMedia.toFixed(3).replace(".", ",") : "—";
 
-  // Melhor tipster (dentro do conjunto filtrado)
+  // Melhor tipster (dentro do conjunto filtrado) — ranking sempre por unidades,
+  // mas mostra o valor exato em reais quando esse for o modo ativo
   const porTipster = {};
+  const porTipsterReais = {};
   resolved.forEach(b => {
     if (!b.tipster) return;
     porTipster[b.tipster] = (porTipster[b.tipster] || 0) + b.lucro_uni;
+    porTipsterReais[b.tipster] = (porTipsterReais[b.tipster] || 0) + b.lucro_reais;
   });
   let melhorTipster = null, melhorValor = -Infinity;
   Object.entries(porTipster).forEach(([t, v]) => {
@@ -238,7 +247,7 @@ function renderAll() {
   });
   document.getElementById("metric-melhor-tipster").textContent = melhorTipster || "—";
   document.getElementById("metric-melhor-tipster-foot").textContent =
-    melhorTipster ? `${fmtValue(melhorValor, true)} de resultado` : "Sem dados suficientes";
+    melhorTipster ? `${fmtDual(melhorValor, porTipsterReais[melhorTipster] || 0, true)} de resultado` : "Sem dados suficientes";
 
   document.getElementById("side-filtered").textContent =
     ACTIVE_TIPSTER ? `Filtrado: ${ACTIVE_TIPSTER}` : "Todas as apostas";
@@ -250,45 +259,55 @@ function renderAll() {
 }
 
 function renderChart(resolvedBets) {
-  // agrupa por dia
-  const porDia = {};
+  // agrupa por dia (unidades e reais, em paralelo)
+  const porDiaUni = {};
+  const porDiaReais = {};
   resolvedBets.forEach(b => {
     if (!b.data_iso) return;
-    porDia[b.data_iso] = (porDia[b.data_iso] || 0) + b.lucro_uni;
+    porDiaUni[b.data_iso] = (porDiaUni[b.data_iso] || 0) + b.lucro_uni;
+    porDiaReais[b.data_iso] = (porDiaReais[b.data_iso] || 0) + b.lucro_reais;
   });
-  const dias = Object.keys(porDia).sort();
+  const dias = Object.keys(porDiaUni).sort();
 
-  let acumulado = 0;
-  let pico = -Infinity;
-  let runningPeak = -Infinity;
-  let maiorQueda = 0;
-  const acumuladoSerie = [];
-  const diarioSerie = [];
+  let acumuladoUni = 0, acumuladoReais = 0;
+  let picoUni = -Infinity, picoReais = -Infinity;
+  let runningPeakUni = -Infinity, runningPeakReais = -Infinity;
+  let maiorQuedaUni = 0, maiorQuedaReais = 0;
+  const acumuladoSerieUni = [];
+  const acumuladoSerieReais = [];
+  const diarioSerieUni = [];
+  const diarioSerieReais = [];
 
   dias.forEach(d => {
-    const valorDia = porDia[d];
-    acumulado += valorDia;
-    diarioSerie.push(valorDia);
-    acumuladoSerie.push(acumulado);
-    if (acumulado > pico) pico = acumulado;
-    if (acumulado > runningPeak) runningPeak = acumulado;
-    const queda = runningPeak - acumulado;
-    if (queda > maiorQueda) maiorQueda = queda;
+    acumuladoUni += porDiaUni[d];
+    acumuladoReais += porDiaReais[d];
+    diarioSerieUni.push(porDiaUni[d]);
+    diarioSerieReais.push(porDiaReais[d]);
+    acumuladoSerieUni.push(acumuladoUni);
+    acumuladoSerieReais.push(acumuladoReais);
+    if (acumuladoUni > picoUni) picoUni = acumuladoUni;
+    if (acumuladoReais > picoReais) picoReais = acumuladoReais;
+    if (acumuladoUni > runningPeakUni) runningPeakUni = acumuladoUni;
+    if (acumuladoReais > runningPeakReais) runningPeakReais = acumuladoReais;
+    const quedaUni = runningPeakUni - acumuladoUni;
+    const quedaReais = runningPeakReais - acumuladoReais;
+    if (quedaUni > maiorQuedaUni) maiorQuedaUni = quedaUni;
+    if (quedaReais > maiorQuedaReais) maiorQuedaReais = quedaReais;
   });
 
-  const fim = acumuladoSerie.length ? acumuladoSerie[acumuladoSerie.length - 1] : 0;
+  const fimUni = acumuladoSerieUni.length ? acumuladoSerieUni[acumuladoSerieUni.length - 1] : 0;
+  const fimReais = acumuladoSerieReais.length ? acumuladoSerieReais[acumuladoSerieReais.length - 1] : 0;
   const labels = dias.map(d => {
     const [y, m, day] = d.split("-");
     return `${day}/${m}`;
   });
 
   document.getElementById("chart-summary").textContent = dias.length
-    ? `${resolvedBets.length} apostas em ${dias.length} dias · pico ${fmtValue(pico, true)} · maior queda ${fmtValue(-maiorQueda, false)} · fim ${fmtValue(fim, true)}`
+    ? `${resolvedBets.length} apostas em ${dias.length} dias · pico ${fmtDual(picoUni, picoReais, true)} · maior queda ${fmtDual(-maiorQuedaUni, -maiorQuedaReais, false)} · fim ${fmtDual(fimUni, fimReais, true)}`
     : "Sem apostas resolvidas nesse filtro ainda.";
 
-  // valores exibidos no gráfico já convertidos, se estiver em modo R$
-  const diarioDisplay = diarioSerie.map(v => SHOW_BRL ? v * STAKE_BASE : v);
-  const acumuladoDisplay = acumuladoSerie.map(v => SHOW_BRL ? v * STAKE_BASE : v);
+  const diarioDisplay = SHOW_BRL ? diarioSerieReais : diarioSerieUni;
+  const acumuladoDisplay = SHOW_BRL ? acumuladoSerieReais : acumuladoSerieUni;
 
   const ctx = document.getElementById("results-chart").getContext("2d");
   if (chartInstance) chartInstance.destroy();
