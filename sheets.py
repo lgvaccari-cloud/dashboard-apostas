@@ -78,27 +78,13 @@ def _find_table_start(rows):
     return None, None
 
 
-def fetch_bets():
-    """Lê a aba configurada e devolve uma lista de dicts, uma por aposta.
-
-    Ignora linhas totalmente vazias (sem Data e sem Casa).
-    """
-    client = _get_client()
-    sheet_id = os.environ["SHEET_ID"]
-    tab_name = os.environ["SHEET_TAB_NAME"]
-
-    sh = client.open_by_key(sheet_id)
-    ws = sh.worksheet(tab_name)
-
-    # pega tudo de uma vez (mais rápido que célula por célula)
-    rows = ws.get_all_values()
-
+def _parse_bets_from_rows(rows, mes_label):
+    """Extrai as apostas de uma aba já lida (rows), marcando cada aposta com
+    o nome da aba de origem (mes_label). Retorna [] se a aba não tiver a
+    tabela de apostas (sem cabeçalho 'Tipster')."""
     data_start_row, data_col = _find_table_start(rows)
     if data_col is None:
-        raise RuntimeError(
-            "Não encontrei o cabeçalho 'Tipster' na planilha — confira o "
-            "nome da aba (SHEET_TAB_NAME) e a estrutura das colunas."
-        )
+        return []
 
     bets = []
     for row in rows[data_start_row:]:
@@ -113,6 +99,7 @@ def fetch_bets():
         parsed_date = _parse_date(record["data"])
 
         bet = {
+            "mes": mes_label,
             "data": record["data"].strip(),
             "data_iso": parsed_date.isoformat() if parsed_date else None,
             "casa": record["casa"].strip(),
@@ -130,3 +117,30 @@ def fetch_bets():
         bets.append(bet)
 
     return bets
+
+
+def fetch_bets():
+    """Lê TODAS as abas da planilha (uma por mês) e devolve uma lista única
+    de apostas, cada uma marcada com o mês (nome da aba) de origem.
+
+    Abas que não tiverem a tabela de apostas (sem o cabeçalho 'Tipster') são
+    ignoradas silenciosamente — assim uma aba extra/diferente na planilha não
+    quebra a leitura.
+    """
+    client = _get_client()
+    sheet_id = os.environ["SHEET_ID"]
+
+    sh = client.open_by_key(sheet_id)
+
+    all_bets = []
+    for ws in sh.worksheets():
+        rows = ws.get_all_values()
+        all_bets.extend(_parse_bets_from_rows(rows, ws.title))
+
+    if not all_bets:
+        raise RuntimeError(
+            "Não encontrei nenhuma aba com o cabeçalho 'Tipster' na planilha — "
+            "confira se o SHEET_ID está certo e se as abas têm a mesma estrutura de colunas."
+        )
+
+    return all_bets
