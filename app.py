@@ -2,7 +2,7 @@ import os
 from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 
-from sheets import fetch_bets
+from sheets import fetch_bets, update_bet
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "troque-essa-chave-em-producao")
@@ -50,6 +50,38 @@ def api_bets():
     try:
         bets = fetch_bets()
         return jsonify({"ok": True, "bets": bets})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/resolve", methods=["POST"])
+@login_required
+def api_resolve():
+    """Marca o resultado (Green/Red/Void) de uma aposta pendente."""
+    try:
+        payload = request.get_json(force=True)
+        mes = payload["mes"]
+        row = int(payload["row"])
+        resultado = payload["resultado"]
+        if resultado not in ("Green", "Red", "Void"):
+            return jsonify({"ok": False, "error": "Resultado inválido"}), 400
+        update_bet(mes, row, {"resultado": resultado})
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/update_bet", methods=["POST"])
+@login_required
+def api_update_bet():
+    """Edita um ou mais campos de uma aposta já existente."""
+    try:
+        payload = request.get_json(force=True)
+        mes = payload["mes"]
+        row = int(payload["row"])
+        updates = payload.get("updates", {})
+        update_bet(mes, row, updates)
+        return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
