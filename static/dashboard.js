@@ -2,6 +2,7 @@ const USER_NAME = "Luís";
 
 let ALL_BETS = [];
 let ACTIVE_TIPSTER = null;
+let ACTIVE_MES = null;
 let chartInstance = null;
 let CURRENT_VIEW = "geral";
 let SHOW_BRL = false;
@@ -68,6 +69,7 @@ async function loadData() {
     if (!data.ok) throw new Error(data.error || "Erro desconhecido");
     ALL_BETS = data.bets;
     renderChips();
+    renderMesChips();
     renderAll();
   } catch (err) {
     errorBox.style.display = "block";
@@ -96,6 +98,31 @@ function renderChips() {
 document.getElementById("clear-filters").addEventListener("click", () => {
   ACTIVE_TIPSTER = null;
   renderChips();
+  renderAll();
+});
+
+function renderMesChips() {
+  // mantém a ordem em que os meses aparecem na planilha (ordem das abas)
+  const meses = [...new Set(ALL_BETS.map(b => b.mes).filter(Boolean))];
+  const container = document.getElementById("mes-chips");
+  container.innerHTML = "";
+  meses.forEach(m => {
+    const chip = document.createElement("button");
+    chip.className = "chip" + (ACTIVE_MES === m ? " active" : "");
+    chip.textContent = m;
+    chip.onclick = () => {
+      ACTIVE_MES = (ACTIVE_MES === m) ? null : m;
+      renderMesChips();
+      renderAll();
+    };
+    container.appendChild(chip);
+  });
+  document.getElementById("clear-mes").style.display = ACTIVE_MES ? "inline" : "none";
+}
+
+document.getElementById("clear-mes").addEventListener("click", () => {
+  ACTIVE_MES = null;
+  renderMesChips();
   renderAll();
 });
 
@@ -152,6 +179,7 @@ function renderHistorico() {
     const uniClass = b.lucro_uni > 0 ? "positive" : b.lucro_uni < 0 ? "negative" : "";
     return `
       <tr>
+        <td>${b.mes || "—"}</td>
         <td>${b.data || "—"}</td>
         <td>${casaBadge(b.casa)}</td>
         <td>${b.tipster || "—"}</td>
@@ -167,8 +195,10 @@ function renderHistorico() {
 }
 
 function currentBets() {
-  if (!ACTIVE_TIPSTER) return ALL_BETS;
-  return ALL_BETS.filter(b => b.tipster === ACTIVE_TIPSTER);
+  let result = ALL_BETS;
+  if (ACTIVE_TIPSTER) result = result.filter(b => b.tipster === ACTIVE_TIPSTER);
+  if (ACTIVE_MES) result = result.filter(b => b.mes === ACTIVE_MES);
+  return result;
 }
 
 function renderAll() {
@@ -250,7 +280,9 @@ function renderAll() {
     melhorTipster ? `${fmtDual(melhorValor, porTipsterReais[melhorTipster] || 0, true)} de resultado` : "Sem dados suficientes";
 
   document.getElementById("side-filtered").textContent =
-    ACTIVE_TIPSTER ? `Filtrado: ${ACTIVE_TIPSTER}` : "Todas as apostas";
+    [ACTIVE_TIPSTER, ACTIVE_MES].filter(Boolean).length
+      ? `Filtrado: ${[ACTIVE_TIPSTER, ACTIVE_MES].filter(Boolean).join(" · ")}`
+      : "Todas as apostas";
   document.getElementById("chart-title").textContent =
     ACTIVE_TIPSTER ? `Resultado acumulado (${ACTIVE_TIPSTER})` : "Resultado acumulado";
 
