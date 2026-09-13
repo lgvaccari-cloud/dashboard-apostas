@@ -4,8 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Painel de Apostas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <script src="{{ url_for('static', filename='chart.umd.min.js') }}"></script>
+  <script>window.STAKE_BASE = {{ stake_base }};</script>
 </head>
 <body>
   <div class="layout">
@@ -29,9 +33,15 @@
         <div>
           <div class="eyebrow" id="today-label"></div>
           <h1 id="greeting">Carregando...</h1>
-          <p class="subtitle">Valores em unidades.</p>
+          <p class="subtitle" id="subtitle">Valores em unidades.</p>
         </div>
-        <button class="refresh-btn" id="refresh-btn" title="Atualizar">&#8635;</button>
+        <div class="topbar-actions">
+          <div class="currency-toggle">
+            <button class="toggle-btn active" id="toggle-uni">Unidades</button>
+            <button class="toggle-btn" id="toggle-real">R$</button>
+          </div>
+          <button class="refresh-btn" id="refresh-btn" title="Atualizar">&#8635;</button>
+        </div>
       </header>
 
       <div class="filters-bar">
