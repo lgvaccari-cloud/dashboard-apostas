@@ -103,7 +103,12 @@ body {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
-  white-space: nowrap;
+  table-layout: fixed;
+}
+.bets-table th, .bets-table td { white-space: nowrap; }
+.bets-table th:nth-child(4), .bets-table td:nth-child(4) {
+  white-space: normal;
+  width: 300px;
 }
 .bets-table th {
   text-align: left;
@@ -145,7 +150,7 @@ body {
 .content {
   flex: 1;
   padding: 28px 32px 60px;
-  max-width: 1180px;
+  max-width: 1500px;
 }
 
 .topbar {
