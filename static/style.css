@@ -252,6 +252,24 @@ body {
 .row-action-btn.save { background: var(--green); color: white; }
 .row-action-btn.cancel { background: var(--red-bg); color: var(--red); }
 
+.bets-table th.sortable { cursor: pointer; user-select: none; }
+.bets-table th.sortable:hover { color: var(--text); }
+.sort-arrow { margin-left: 4px; font-size: 9px; }
+
+.banca-casa-row { cursor: pointer; }
+.banca-casa-row:hover { background: var(--bg); }
+.banca-detail-row td { background: var(--bg); padding: 0; }
+.banca-detail-inner { padding: 10px 16px; display: flex; flex-direction: column; gap: 8px; }
+.banca-conta-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.banca-conta-nome { flex: 1; color: var(--muted); }
+.banca-conta-line .edit-input { width: 140px; }
+.banca-conta-line .row-action-btn.save { width: auto; padding: 0 10px; }
+
 .pending-banner {
   display: none;
   align-items: center;

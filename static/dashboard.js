@@ -15,6 +15,7 @@ let ACTIVE_TIPSTER = null;
 let ACTIVE_MES = null;
 let ONLY_PENDING = false;
 let ONLY_TODAY = false;
+let ONLY_YESTERDAY = false;
 let AUTO_MES_APPLIED = false;
 let chartInstance = null;
 let CURRENT_VIEW = "geral";
@@ -38,6 +39,18 @@ function todayISO() {
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+function yesterdayISO() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+function escJs(value) {
+  return String(value ?? "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
 
 function getRoiPctFromSheet(mes) {
@@ -275,6 +288,13 @@ function switchView(view) {
   document.getElementById("nav-historico").classList.toggle("active", view === "historico");
   document.getElementById("nav-ranking").classList.toggle("active", view === "ranking");
   document.getElementById("nav-bancas").classList.toggle("active", view === "bancas");
+
+  if (view === "ranking" || view === "bancas") {
+    document.getElementById("tipster-filter-bar").style.display = "none";
+  } else {
+    renderChips();
+  }
+
   if (view === "historico") renderHistorico();
   if (view === "ranking") renderRanking();
   if (view === "bancas") loadBancas();
@@ -301,9 +321,85 @@ document.getElementById("clear-pending-filter").addEventListener("click", () => 
 
 document.getElementById("filter-today").addEventListener("click", () => {
   ONLY_TODAY = !ONLY_TODAY;
+  if (ONLY_TODAY) ONLY_YESTERDAY = false;
   document.getElementById("filter-today").classList.toggle("active", ONLY_TODAY);
+  document.getElementById("filter-yesterday").classList.remove("active");
   renderHistorico();
 });
+
+document.getElementById("filter-yesterday").addEventListener("click", () => {
+  ONLY_YESTERDAY = !ONLY_YESTERDAY;
+  if (ONLY_YESTERDAY) ONLY_TODAY = false;
+  document.getElementById("filter-yesterday").classList.toggle("active", ONLY_YESTERDAY);
+  document.getElementById("filter-today").classList.remove("active");
+  renderHistorico();
+});
+
+const SORT_STATE = {
+  hist: { key: null, dir: 1 },
+  rank: { key: null, dir: 1 },
+  banca: { key: null, dir: 1 },
+};
+
+function applySort(list, state, getter) {
+  if (!state.key) return list;
+  return list.slice().sort((a, b) => {
+    let va = getter(a, state.key);
+    let vb = getter(b, state.key);
+    if (va == null) va = "";
+    if (vb == null) vb = "";
+    if (typeof va === "string") va = va.toLowerCase();
+    if (typeof vb === "string") vb = vb.toLowerCase();
+    if (va < vb) return -1 * state.dir;
+    if (va > vb) return 1 * state.dir;
+    return 0;
+  });
+}
+
+const HIST_HEADERS = [
+  ["th-hist-data", "data_iso"],
+  ["th-hist-casa", "casa"],
+  ["th-hist-tipster", "tipster"],
+  ["th-hist-aposta", "aposta"],
+  ["th-hist-odd", "odd"],
+  ["th-hist-stake", "stake"],
+  ["th-hist-resultado", "resultado"],
+  ["th-hist-uni", "lucro_uni"],
+];
+const RANK_HEADERS = [
+  ["th-rank-tipster", "tipster"],
+  ["th-rank-apostas", "apostas"],
+  ["th-rank-taxa", "taxa"],
+  ["th-rank-roi", "roi"],
+  ["th-rank-resultado", "lucro"],
+];
+const BANCA_HEADERS = [
+  ["th-banca-casa", "casa"],
+  ["th-banca-contas", "contas"],
+  ["th-banca-total", "banca"],
+];
+
+function setupSortableHeaders(headers, stateKey, rerenderFn) {
+  headers.forEach(([id, field]) => {
+    const th = document.getElementById(id);
+    if (!th) return;
+    const label = th.textContent;
+    th.classList.add("sortable");
+    th.innerHTML = `<span class="th-text">${label}</span><span class="sort-arrow" id="arrow-${id}"></span>`;
+    th.addEventListener("click", () => {
+      const state = SORT_STATE[stateKey];
+      if (state.key === field) state.dir *= -1;
+      else { state.key = field; state.dir = 1; }
+      headers.forEach(([hid]) => {
+        const arrowEl = document.getElementById(`arrow-${hid}`);
+        if (arrowEl) arrowEl.textContent = "";
+      });
+      const activeArrow = document.getElementById(`arrow-${id}`);
+      if (activeArrow) activeArrow.textContent = state.dir === 1 ? "▲" : "▼";
+      rerenderFn();
+    });
+  });
+}
 
 function resultTag(resultado) {
   const r = (resultado || "").toLowerCase();
@@ -392,9 +488,12 @@ function renderHistorico() {
   const tbody = document.getElementById("bets-table-body");
   if (!tbody) return;
 
-  const bets = currentBets()
-    .slice()
-    .sort((a, b) => (b.data_iso || "").localeCompare(a.data_iso || ""));
+  let bets = currentBets().slice();
+  if (SORT_STATE.hist.key) {
+    bets = applySort(bets, SORT_STATE.hist, (b, k) => b[k]);
+  } else {
+    bets.sort((a, b) => (b.data_iso || "").localeCompare(a.data_iso || ""));
+  }
 
   CURRENT_HISTORICO_BETS = bets;
 
@@ -462,6 +561,7 @@ function currentBets() {
   if (ACTIVE_MES) result = result.filter(b => b.mes === ACTIVE_MES);
   if (ONLY_PENDING) result = result.filter(b => !isResolved(b));
   if (ONLY_TODAY) result = result.filter(b => b.data_iso === todayISO());
+  if (ONLY_YESTERDAY) result = result.filter(b => b.data_iso === yesterdayISO());
   return result;
 }
 
@@ -567,14 +667,17 @@ function renderRanking() {
     const taxa = decisoes > 0 ? (t.greens / decisoes) * 100 : null;
     const roi = t.stake > 0 ? (t.lucro / t.stake) * 100 : null;
     return { tipster, ...t, taxa, roi };
-  }).sort((a, b) => b.lucro - a.lucro);
+  });
+  const linhasOrdenadas = SORT_STATE.rank.key
+    ? applySort(linhas, SORT_STATE.rank, (l, k) => l[k])
+    : linhas.slice().sort((a, b) => b.lucro - a.lucro);
 
-  if (!linhas.length) {
+  if (!linhasOrdenadas.length) {
     tbody.innerHTML = `<tr><td colspan="5">Sem apostas nesse filtro ainda.</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = linhas.map(l => {
+  tbody.innerHTML = linhasOrdenadas.map(l => {
     const cls = l.lucro > 0 ? "positive" : l.lucro < 0 ? "negative" : "";
     return `
       <tr>
@@ -589,11 +692,17 @@ function renderRanking() {
 }
 
 // ---------- Bancas por casa ----------
+let LAST_BANCAS_RESUMO = [];
+let LAST_BANCAS_CONTAS = [];
+let EXPANDED_CASA = null;
+
 async function loadBancas() {
   const tbody = document.getElementById("bancas-table-body");
   if (!tbody) return;
 
   if (!ACTIVE_MES) {
+    document.getElementById("banca-total").textContent = "—";
+    document.getElementById("banca-total-foot").textContent = "Selecione um mês no filtro";
     tbody.innerHTML = `<tr><td colspan="3">Selecione um mês no filtro pra ver as bancas desse mês.</td></tr>`;
     return;
   }
@@ -603,19 +712,82 @@ async function loadBancas() {
     const res = await fetch(`/api/bancas/${encodeURIComponent(ACTIVE_MES)}`);
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || "Erro ao carregar bancas");
-    if (!data.bancas.length) {
-      tbody.innerHTML = `<tr><td colspan="3">Não encontrei a tabela de bancas nessa aba.</td></tr>`;
-      return;
-    }
-    tbody.innerHTML = data.bancas.map(b => `
-      <tr>
-        <td>${b.casa}</td>
-        <td>${b.contas} conta${b.contas === 1 ? "" : "s"} ativa${b.contas === 1 ? "" : "s"}</td>
-        <td><b>${b.banca.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</b></td>
-      </tr>
-    `).join("");
+    LAST_BANCAS_RESUMO = data.resumo;
+    LAST_BANCAS_CONTAS = data.contas;
+    renderBancasTable();
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="3">Erro: ${err.message}</td></tr>`;
+  }
+}
+
+function renderBancasTable() {
+  const tbody = document.getElementById("bancas-table-body");
+  if (!tbody) return;
+
+  const linhasOrdenadas = SORT_STATE.banca.key
+    ? applySort(LAST_BANCAS_RESUMO, SORT_STATE.banca, (l, k) => l[k])
+    : LAST_BANCAS_RESUMO.slice().sort((a, b) => b.banca - a.banca);
+
+  const totalGeral = LAST_BANCAS_RESUMO.reduce((s, r) => s + r.banca, 0);
+  document.getElementById("banca-total").textContent =
+    totalGeral.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  document.getElementById("banca-total-foot").textContent =
+    `${LAST_BANCAS_RESUMO.length} casa${LAST_BANCAS_RESUMO.length === 1 ? "" : "s"} ativa${LAST_BANCAS_RESUMO.length === 1 ? "" : "s"}`;
+
+  if (!linhasOrdenadas.length) {
+    tbody.innerHTML = `<tr><td colspan="3">Não encontrei a tabela de bancas nessa aba.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = linhasOrdenadas.map(l => {
+    const rowHtml = `
+      <tr class="banca-casa-row" onclick="toggleBancaCasa('${escJs(l.casa)}')">
+        <td>${l.casa}</td>
+        <td>${l.contas} conta${l.contas === 1 ? "" : "s"} ativa${l.contas === 1 ? "" : "s"}</td>
+        <td><b>${l.banca.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</b></td>
+      </tr>
+    `;
+    if (EXPANDED_CASA !== l.casa) return rowHtml;
+
+    const contasDaCasa = LAST_BANCAS_CONTAS.filter(c => c.casa === l.casa);
+    const detailHtml = `
+      <tr class="banca-detail-row">
+        <td colspan="3">
+          <div class="banca-detail-inner">
+            ${contasDaCasa.map(c => `
+              <div class="banca-conta-line">
+                <span class="banca-conta-nome">${c.nome || "—"}</span>
+                <input class="edit-input" id="banca-input-${c.row}" value="${esc(c.banca.toFixed(2).replace(".", ","))}">
+                <button class="row-action-btn save" onclick="event.stopPropagation(); saveBancaConta(${c.row})">Salvar</button>
+              </div>
+            `).join("")}
+          </div>
+        </td>
+      </tr>
+    `;
+    return rowHtml + detailHtml;
+  }).join("");
+}
+
+function toggleBancaCasa(casa) {
+  EXPANDED_CASA = (EXPANDED_CASA === casa) ? null : casa;
+  renderBancasTable();
+}
+
+async function saveBancaConta(row) {
+  const input = document.getElementById(`banca-input-${row}`);
+  if (!input) return;
+  try {
+    const res = await fetch("/api/update_banca", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mes: ACTIVE_MES, row, valor: input.value }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Erro ao salvar");
+    await loadBancas();
+  } catch (err) {
+    alert("Não consegui salvar: " + err.message);
   }
 }
 
@@ -875,6 +1047,10 @@ function renderChart(resolvedBets) {
 }
 
 document.getElementById("refresh-btn").addEventListener("click", () => loadData(true));
+
+setupSortableHeaders(HIST_HEADERS, "hist", renderHistorico);
+setupSortableHeaders(RANK_HEADERS, "rank", renderRanking);
+setupSortableHeaders(BANCA_HEADERS, "banca", renderBancasTable);
 
 // aplica o modo noturno salvo (se houver) antes de tudo
 document.getElementById("toggle-dark").innerHTML = ICON_MOON;
