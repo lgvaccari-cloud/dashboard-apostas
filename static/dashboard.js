@@ -624,15 +624,18 @@ function historicoBets() {
 
 // ---------- Modal "Nova aposta" ----------
 function populateNewBetMesOptions() {
-  const select = document.getElementById("new-bet-mes");
   const meses = [...new Set(ALL_BETS.map(b => b.mes).filter(Boolean))];
-  const atual = select.value;
-  select.innerHTML = meses.map(m => `<option value="${esc(m)}">${esc(formatMesLabel(m))}</option>`).join("");
-  if (ACTIVE_MES && meses.includes(ACTIVE_MES)) {
-    select.value = ACTIVE_MES;
-  } else if (meses.includes(atual)) {
-    select.value = atual;
-  }
+  const optionsHtml = meses.map(m => `<option value="${esc(m)}">${esc(formatMesLabel(m))}</option>`).join("");
+
+  [document.getElementById("new-bet-mes"), document.getElementById("new-bet-print-mes")].forEach(select => {
+    const atual = select.value;
+    select.innerHTML = optionsHtml;
+    if (ACTIVE_MES && meses.includes(ACTIVE_MES)) {
+      select.value = ACTIVE_MES;
+    } else if (meses.includes(atual)) {
+      select.value = atual;
+    }
+  });
 }
 
 function openNewBetModal() {
@@ -649,8 +652,24 @@ function openNewBetModal() {
   document.getElementById("new-bet-odd").value = "";
   document.getElementById("new-bet-stake").value = "";
   document.getElementById("new-bet-resultado").value = "";
+  document.getElementById("new-bet-print-file").value = "";
+  document.getElementById("new-bet-print-caption").value = "";
+  document.getElementById("new-bet-print-feedback").innerHTML = "";
+  document.getElementById("new-bet-print-feedback").className = "";
+  setNewBetMode("manual");
   document.getElementById("new-bet-overlay").style.display = "flex";
 }
+
+function setNewBetMode(mode) {
+  document.getElementById("new-bet-mode-manual").classList.toggle("active", mode === "manual");
+  document.getElementById("new-bet-mode-print").classList.toggle("active", mode === "print");
+  document.getElementById("new-bet-manual-form").style.display = mode === "manual" ? "" : "none";
+  document.getElementById("new-bet-print-form").style.display = mode === "print" ? "" : "none";
+}
+
+document.getElementById("new-bet-mode-manual").addEventListener("click", () => setNewBetMode("manual"));
+document.getElementById("new-bet-mode-print").addEventListener("click", () => setNewBetMode("print"));
+document.getElementById("new-bet-print-cancel").addEventListener("click", closeNewBetModal);
 
 function closeNewBetModal() {
   document.getElementById("new-bet-overlay").style.display = "none";
@@ -690,6 +709,73 @@ document.getElementById("new-bet-save").addEventListener("click", async () => {
     setTimeout(() => refreshMes(mes), 900);
   } catch (err) {
     alert("Não consegui salvar a aposta nova: " + err.message);
+  }
+});
+
+// ---------- Nova aposta por print (manda pro bot processar) ----------
+function setPrintFeedback(html, cls) {
+  const el = document.getElementById("new-bet-print-feedback");
+  el.innerHTML = html;
+  el.className = cls || "";
+}
+
+function handlePrintResult(result, mes) {
+  if (result.status === "ok") {
+    setPrintFeedback((result.linhas || []).join("<br>"));
+    setTimeout(() => refreshMes(mes), 900);
+  } else if (result.status === "no_bets_found") {
+    setPrintFeedback("Não consegui identificar nenhuma aposta nesse print. Tenta um print mais nítido.", "error");
+  } else if (result.status === "waiting_somar") {
+    setPrintFeedback(result.message);
+  } else if (result.status === "ambiguous_casa") {
+    const botoes = result.options.map(op =>
+      `<button type="button" data-casa="${esc(op)}">${esc(op)}</button>`
+    ).join("");
+    setPrintFeedback(
+      `Esse layout é idêntico entre duas casas — qual é de verdade?<div class="casa-choice-buttons">${botoes}</div>`
+    );
+    document.querySelectorAll("#new-bet-print-feedback .casa-choice-buttons button").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        setPrintFeedback("Registrando...", "loading");
+        try {
+          const res = await fetch("/api/resolve_casa_image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pendencia_id: result.pendencia_id, casa: btn.dataset.casa }),
+          });
+          const data = await res.json();
+          handlePrintResult(data, mes);
+        } catch (err) {
+          setPrintFeedback("Não consegui registrar: " + err.message, "error");
+        }
+      });
+    });
+  } else {
+    setPrintFeedback(result.message || "Deu erro ao processar o print.", "error");
+  }
+}
+
+document.getElementById("new-bet-print-send").addEventListener("click", async () => {
+  const mes = document.getElementById("new-bet-print-mes").value;
+  const fileInput = document.getElementById("new-bet-print-file");
+  const caption = document.getElementById("new-bet-print-caption").value;
+
+  if (!mes) { alert("Escolha um mês."); return; }
+  if (!fileInput.files.length) { alert("Escolhe o print da aposta."); return; }
+
+  setPrintFeedback("Recebi o print, analisando... 🔎", "loading");
+
+  const formData = new FormData();
+  formData.append("image", fileInput.files[0]);
+  formData.append("mes", mes);
+  formData.append("caption", caption);
+
+  try {
+    const res = await fetch("/api/add_bet_from_image", { method: "POST", body: formData });
+    const data = await res.json();
+    handlePrintResult(data, mes);
+  } catch (err) {
+    setPrintFeedback("Não consegui enviar o print: " + err.message, "error");
   }
 });
 
