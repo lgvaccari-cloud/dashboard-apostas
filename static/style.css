@@ -47,6 +47,17 @@ body {
   align-items: center;
   justify-content: center;
 }
+.login-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.login-topbar {
+  display: flex;
+  justify-content: flex-end;
+  width: 320px;
+}
 .login-card {
   background: var(--card-bg);
   border: 1px solid var(--border);

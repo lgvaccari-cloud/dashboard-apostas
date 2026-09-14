@@ -181,7 +181,7 @@ function tryAutoSelectMonth() {
 // ---------- Chips de tipster (só aparecem com um mês selecionado) ----------
 function renderChips() {
   const bar = document.getElementById("tipster-filter-bar");
-  if (!ACTIVE_MES) {
+  if (!ACTIVE_MES || CURRENT_VIEW === "ranking" || CURRENT_VIEW === "bancas") {
     bar.style.display = "none";
     return;
   }
@@ -289,11 +289,7 @@ function switchView(view) {
   document.getElementById("nav-ranking").classList.toggle("active", view === "ranking");
   document.getElementById("nav-bancas").classList.toggle("active", view === "bancas");
 
-  if (view === "ranking" || view === "bancas") {
-    document.getElementById("tipster-filter-bar").style.display = "none";
-  } else {
-    renderChips();
-  }
+  renderChips();
 
   if (view === "historico") renderHistorico();
   if (view === "ranking") renderRanking();
@@ -301,6 +297,7 @@ function switchView(view) {
 }
 
 document.getElementById("nav-geral").addEventListener("click", () => switchView("geral"));
+document.getElementById("brand-home").addEventListener("click", () => switchView("geral"));
 document.getElementById("nav-historico").addEventListener("click", () => {
   ONLY_PENDING = false;
   switchView("historico");
@@ -488,7 +485,7 @@ function renderHistorico() {
   const tbody = document.getElementById("bets-table-body");
   if (!tbody) return;
 
-  let bets = currentBets().slice();
+  let bets = historicoBets().slice();
   if (SORT_STATE.hist.key) {
     bets = applySort(bets, SORT_STATE.hist, (b, k) => b[k]);
   } else {
@@ -559,6 +556,13 @@ function currentBets() {
   let result = ALL_BETS;
   if (ACTIVE_TIPSTER) result = result.filter(b => b.tipster === ACTIVE_TIPSTER);
   if (ACTIVE_MES) result = result.filter(b => b.mes === ACTIVE_MES);
+  return result;
+}
+
+// usado só na tabela do Histórico — soma os filtros rápidos (pendentes,
+// hoje, ontem) por cima do filtro de tipster/mês, sem afetar os cards/gráfico
+function historicoBets() {
+  let result = currentBets();
   if (ONLY_PENDING) result = result.filter(b => !isResolved(b));
   if (ONLY_TODAY) result = result.filter(b => b.data_iso === todayISO());
   if (ONLY_YESTERDAY) result = result.filter(b => b.data_iso === yesterdayISO());
@@ -843,7 +847,7 @@ function renderAll() {
 
   document.getElementById("metric-acerto").textContent = decisoes > 0 ? `${taxaAcerto.toFixed(1).replace(".", ",")}%` : "—";
   document.getElementById("acerto-bar").style.width = `${taxaAcerto}%`;
-  document.getElementById("metric-acerto-foot").textContent = `${greens} positivas em ${decisoes} decisões`;
+  document.getElementById("metric-acerto-foot").textContent = `${greens} positivas em ${decisoes} apostas`;
 
   const roiPill = document.getElementById("metric-roi");
   roiPill.textContent = fmtPct(roi);
