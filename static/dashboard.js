@@ -39,6 +39,11 @@ function todayISO() {
   return `${d.getFullYear()}-${mm}-${dd}`;
 }
 
+function getRoiPctFromSheet(mes) {
+  const bet = ALL_BETS.find(b => b.mes === mes && b.mes_roi_pct);
+  return bet ? bet.mes_roi_pct : null;
+}
+
 function fmtUnits(n, sign) {
   const s = n.toFixed(2).replace(".", ",");
   if (sign && n > 0) return `+${s}u`;
@@ -534,8 +539,12 @@ function renderAll() {
   const liquidoEl = document.getElementById("metric-liquido");
   liquidoEl.textContent = fmtDual(resultadoLiquido, resultadoLiquidoReais, true);
   liquidoEl.className = "card-value" + (resultadoLiquido > 0 ? " positive" : resultadoLiquido < 0 ? " negative" : "");
-  document.getElementById("metric-liquido-foot").textContent =
-    `ROI sobre ${fmtDual(volumeApostadoResolved, volumeApostadoResolvedReais, false)} resolvido`;
+  document.getElementById("card-liquido-label").textContent = ACTIVE_MES ? "Total no mês" : "Total no ano";
+
+  const roiDaPlanilha = ACTIVE_MES ? getRoiPctFromSheet(ACTIVE_MES) : null;
+  document.getElementById("metric-liquido-foot").textContent = roiDaPlanilha
+    ? `${roiDaPlanilha} de ROI`
+    : `ROI sobre ${fmtDual(volumeApostadoResolved, volumeApostadoResolvedReais, false)} resolvido`;
 
   const emAberto = pending.reduce((s, b) => s + b.stake, 0);
   const emAbertoReais = pending.reduce((s, b) => s + b.stake_reais, 0);
@@ -594,14 +603,16 @@ function renderAll() {
   document.getElementById("melhor-tipster-block").style.display = mostrarMelhorPior ? "" : "none";
   document.getElementById("pior-tipster-block").style.display = mostrarMelhorPior ? "" : "none";
 
+  const periodoTexto = ACTIVE_MES ? "no mês" : "no ano";
+
   document.getElementById("metric-melhor-tipster").textContent = melhorTipster || "—";
   document.getElementById("metric-melhor-tipster-foot").innerHTML = melhorTipster
-    ? `<b class="${melhorValor >= 0 ? "positive" : "negative"}">${fmtDual(melhorValor, porTipsterReais[melhorTipster] || 0, true)}</b> de resultado`
+    ? `<b class="${melhorValor >= 0 ? "positive" : "negative"}">${fmtDual(melhorValor, porTipsterReais[melhorTipster] || 0, true)}</b> ${periodoTexto}`
     : "Sem dados suficientes";
 
   document.getElementById("metric-pior-tipster").textContent = piorTipster || "—";
   document.getElementById("metric-pior-tipster-foot").innerHTML = piorTipster
-    ? `<b class="${piorValor >= 0 ? "positive" : "negative"}">${fmtDual(piorValor, porTipsterReais[piorTipster] || 0, true)}</b> de resultado`
+    ? `<b class="${piorValor >= 0 ? "positive" : "negative"}">${fmtDual(piorValor, porTipsterReais[piorTipster] || 0, true)}</b> ${periodoTexto}`
     : "Sem dados suficientes";
 
   document.getElementById("side-filtered").textContent =
