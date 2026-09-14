@@ -1010,7 +1010,7 @@ function renderChart(resolvedBets) {
     summaryEl.innerHTML = `
       <div class="chart-summary-row">${resolvedBets.length} apostas em ${dias.length} dias</div>
       <div class="chart-summary-row">${ICON_TREND_UP} Pico: <b style="color:var(--green)">${fmtDual(picoUni, picoReais, true)}</b></div>
-      <div class="chart-summary-row">${ICON_TREND_DOWN} Maior Drawdown: <b style="color:var(--red)">${fmtDual(Math.abs(maiorQuedaUni), Math.abs(maiorQuedaReais), false)}</b></div>
+      <div class="chart-summary-row">${ICON_TREND_DOWN} Maior Drawdown: <b style="color:var(--red)">${fmtDual(-maiorQuedaUni, -maiorQuedaReais, false)}</b></div>
       <div class="chart-summary-row">${ICON_TARGET} Atual: <b style="color:${fimCor}">${fmtDual(fimUni, fimReais, true)}</b></div>
     `;
   }

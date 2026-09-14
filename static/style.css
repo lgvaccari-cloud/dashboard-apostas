@@ -119,6 +119,7 @@ body {
   flex-shrink: 0;
 }
 .brand-name { font-weight: 700; font-size: 14px; color: white; }
+.login-brand .brand-name { color: var(--text); }
 .brand-sub { font-size: 11px; color: var(--muted); }
 
 .side-nav { display: flex; flex-direction: column; gap: 4px; }
