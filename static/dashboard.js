@@ -931,6 +931,19 @@ function renderAll() {
   const mostrarMelhorPior = !ACTIVE_TIPSTER;
   document.getElementById("melhor-tipster-block").style.display = mostrarMelhorPior ? "" : "none";
   document.getElementById("pior-tipster-block").style.display = mostrarMelhorPior ? "" : "none";
+  document.getElementById("ultimas-gerais-block").style.display = mostrarMelhorPior ? "" : "none";
+  if (mostrarMelhorPior) {
+    const ultimasGerais = resolved.slice()
+      .sort((a, b) => (b.data_iso || "").localeCompare(a.data_iso || ""))
+      .slice(0, 5);
+    document.getElementById("ultimas-gerais-list").innerHTML = ultimasGerais.map(b => `
+      <div class="ultima-tip-line">
+        <span class="ultima-tip-tipster" title="${esc(b.tipster)}">${b.tipster || "—"}</span>
+        <span class="ultima-tip-aposta" title="${esc(b.aposta)}">${b.aposta || "—"}</span>
+        ${resultTag(b.resultado)}
+      </div>
+    `).join("") || `<div class="ultima-tip-line">Sem apostas resolvidas ainda.</div>`;
+  }
 
   document.getElementById("ultimas-tips-block").style.display = ACTIVE_TIPSTER ? "" : "none";
   if (ACTIVE_TIPSTER) {

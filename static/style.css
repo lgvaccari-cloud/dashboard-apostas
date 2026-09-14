@@ -585,6 +585,14 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   color: var(--text);
 }
 .ultima-tip-valor { font-weight: 700; white-space: nowrap; }
+.ultima-tip-tipster {
+  width: 78px;
+  flex-shrink: 0;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .ultima-tip-line .result-tag { width: 18px; height: 18px; font-size: 9px; flex-shrink: 0; }
 
 .ultimas-tips-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
