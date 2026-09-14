@@ -316,6 +316,16 @@ function switchView(view) {
 
   renderChips();
 
+  // corrige um bug de largura no Safari do iPhone: volta a rolagem da
+  // página e das tabelas pro início, e força o gráfico a recalcular o
+  // tamanho (senão às vezes ele "esquece" a largura certa depois de ficar
+  // escondido numa troca de aba)
+  window.scrollTo(0, 0);
+  document.querySelectorAll(".table-card").forEach(el => { el.scrollLeft = 0; });
+  if (view === "geral" && chartInstance) {
+    setTimeout(() => chartInstance.resize(), 50);
+  }
+
   if (view === "historico") renderHistorico();
   if (view === "ranking") renderRanking();
   if (view === "bancas") loadBancas();
@@ -656,9 +666,40 @@ function openNewBetModal() {
   document.getElementById("new-bet-print-caption").value = "";
   document.getElementById("new-bet-print-feedback").innerHTML = "";
   document.getElementById("new-bet-print-feedback").className = "";
+  PASTED_IMAGE = null;
+  document.getElementById("new-bet-paste-preview").innerHTML = "";
+  document.getElementById("new-bet-paste-zone").classList.remove("has-image");
   setNewBetMode("manual");
   document.getElementById("new-bet-overlay").style.display = "flex";
 }
+
+// ---------- Colar imagem copiada (Ctrl+V) no formulário de print ----------
+let PASTED_IMAGE = null;
+
+document.addEventListener("paste", (e) => {
+  const printForm = document.getElementById("new-bet-print-form");
+  if (!printForm || printForm.style.display === "none") return;
+  const items = e.clipboardData ? e.clipboardData.items : [];
+  for (const item of items) {
+    if (item.type.startsWith("image/")) {
+      const file = item.getAsFile();
+      PASTED_IMAGE = file;
+      document.getElementById("new-bet-print-file").value = "";
+      const url = URL.createObjectURL(file);
+      document.getElementById("new-bet-paste-preview").innerHTML = `<img src="${url}" alt="Print colado">`;
+      document.getElementById("new-bet-paste-zone").classList.add("has-image");
+      e.preventDefault();
+      return;
+    }
+  }
+});
+
+// se escolher um arquivo pelo botão, isso tem prioridade sobre o que foi colado antes
+document.getElementById("new-bet-print-file").addEventListener("change", () => {
+  PASTED_IMAGE = null;
+  document.getElementById("new-bet-paste-preview").innerHTML = "";
+  document.getElementById("new-bet-paste-zone").classList.remove("has-image");
+});
 
 function setNewBetMode(mode) {
   document.getElementById("new-bet-mode-manual").classList.toggle("active", mode === "manual");
@@ -759,14 +800,15 @@ document.getElementById("new-bet-print-send").addEventListener("click", async ()
   const mes = document.getElementById("new-bet-print-mes").value;
   const fileInput = document.getElementById("new-bet-print-file");
   const caption = document.getElementById("new-bet-print-caption").value;
+  const imagemParaEnviar = fileInput.files.length ? fileInput.files[0] : PASTED_IMAGE;
 
   if (!mes) { alert("Escolha um mês."); return; }
-  if (!fileInput.files.length) { alert("Escolhe o print da aposta."); return; }
+  if (!imagemParaEnviar) { alert("Escolhe o print da aposta (ou cola com Ctrl+V)."); return; }
 
   setPrintFeedback("Recebi o print, analisando... 🔎", "loading");
 
   const formData = new FormData();
-  formData.append("image", fileInput.files[0]);
+  formData.append("image", imagemParaEnviar, imagemParaEnviar.name || "print.png");
   formData.append("mes", mes);
   formData.append("caption", caption);
 

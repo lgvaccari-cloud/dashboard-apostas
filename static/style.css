@@ -33,12 +33,18 @@ body.dark-mode .progress-track { background: rgba(255,255,255,0.08); }
 
 * { box-sizing: border-box; }
 
+html {
+  overflow-x: hidden;
+  width: 100%;
+}
+
 body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
   transition: background 0.15s ease, color 0.15s ease;
   overflow-x: hidden;
+  width: 100%;
 }
 
 /* ---------- Login ---------- */
@@ -739,6 +745,26 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
 #new-bet-print-feedback.error { color: var(--red); }
 #new-bet-print-feedback.loading { color: var(--muted); }
 
+.paste-zone {
+  border: 1.5px dashed var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: text;
+}
+.paste-zone:focus, .paste-zone.has-image {
+  border-color: var(--green);
+  outline: none;
+}
+#new-bet-paste-preview { margin-top: 10px; }
+#new-bet-paste-preview img {
+  max-width: 100%;
+  max-height: 160px;
+  border-radius: 8px;
+}
+
 @media (max-width: 900px) {
   .layout { flex-direction: column; }
   .content {
@@ -795,28 +821,23 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   #view-historico .bets-table td:nth-child(2),
   #view-historico .bets-table th:nth-child(2) { display: none; }
 
-  /* tabelas viram uma lista de cartões empilhados, em vez de rolar pro lado */
-  .table-card { overflow-x: visible; }
-  .bets-table { min-width: 0 !important; width: 100%; table-layout: auto; }
-  .bets-table thead { display: none; }
-  .bets-table, .bets-table tbody, .bets-table tr {
+  /* tabelas viram uma lista de cartões empilhados, em vez de rolar pro lado
+     — só no Histórico; Ranking e Bancas continuam iguais ao PC (rolagem) */
+  #view-historico .table-card { overflow-x: visible; }
+  #view-historico .bets-table { min-width: 0 !important; width: 100%; table-layout: auto; }
+  #view-historico .bets-table thead { display: none; }
+  #view-historico .bets-table, #view-historico .bets-table tbody, #view-historico .bets-table tr {
     display: block;
     width: 100%;
   }
-  .bets-table tr {
+  #view-historico .bets-table tr {
     background: var(--card-bg);
     border: 1px solid var(--border);
     border-radius: 12px;
     margin: 10px;
     padding: 6px 14px;
   }
-  .bets-table tr.banca-detail-row {
-    background: none;
-    border: none;
-    margin: 0 10px 10px;
-    padding: 0;
-  }
-  .bets-table td {
+  #view-historico .bets-table td {
     display: flex !important;
     align-items: center;
     justify-content: space-between;
@@ -829,8 +850,8 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
     text-overflow: initial;
     text-align: right;
   }
-  .bets-table tr:last-child td, .bets-table td:last-child { border-bottom: none; }
-  .bets-table td::before {
+  #view-historico .bets-table tr:last-child td, #view-historico .bets-table td:last-child { border-bottom: none; }
+  #view-historico .bets-table td::before {
     content: attr(data-label);
     font-size: 11px;
     font-weight: 700;
@@ -838,8 +859,8 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
     text-align: left;
     flex-shrink: 0;
   }
-  .bets-table td[data-label=""]::before,
-  .bets-table td:not([data-label])::before { content: none; }
+  #view-historico .bets-table td[data-label=""]::before,
+  #view-historico .bets-table td:not([data-label])::before { content: none; }
 }
 
 @media (max-width: 480px) {
