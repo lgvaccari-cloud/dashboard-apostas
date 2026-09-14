@@ -626,11 +626,35 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
 
 @media (max-width: 900px) {
   .layout { flex-direction: column; }
-  .sidebar { width: auto; flex-direction: row; align-items: center; }
-  .side-nav, .logout { display: none; }
+  .sidebar {
+    width: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
+    padding: 14px 16px;
+  }
+  .brand { flex: 1 1 auto; }
+  .side-nav {
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+  .side-item { white-space: nowrap; flex-shrink: 0; }
+  .logout { margin-top: 0; white-space: nowrap; }
+  .topbar h1 { font-size: 21px; }
   .cards-row, .cards-row:nth-of-type(2) { grid-template-columns: 1fr; }
   .bottom-row { grid-template-columns: 1fr; }
-  .content { padding: 20px; }
+  .content { padding: 16px; }
   .modal-grid { grid-template-columns: 1fr; }
   .modal-span-2 { grid-column: span 1; }
+}
+
+@media (max-width: 480px) {
+  .topbar-actions { width: 100%; justify-content: space-between; }
+  .new-bet-btn { flex: 1 1 auto; text-align: center; }
 }

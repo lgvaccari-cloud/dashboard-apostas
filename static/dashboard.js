@@ -1000,11 +1000,13 @@ function renderChart(resolvedBets) {
   if (chartInstance) chartInstance.destroy();
 
   // desenha o valor de cada barra em cima dela — só quando um mês específico
-  // está filtrado (com muitos dias juntos, os números viram bagunça)
+  // está filtrado (com muitos dias juntos, os números viram bagunça), e só
+  // fora do mobile (a tela é estreita demais pra caber os números)
   const barValueLabelPlugin = {
     id: "barValueLabels",
     afterDatasetsDraw(chart) {
       if (!ACTIVE_MES) return;
+      if (window.innerWidth <= 900) return;
       const meta = chart.getDatasetMeta(0);
       const dataset = chart.data.datasets[0];
       const c = chart.ctx;
