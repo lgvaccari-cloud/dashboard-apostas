@@ -38,6 +38,7 @@ body {
   background: var(--bg);
   color: var(--text);
   transition: background 0.15s ease, color 0.15s ease;
+  overflow-x: hidden;
 }
 
 /* ---------- Login ---------- */
@@ -174,8 +175,8 @@ body {
 .bets-table tbody tr:nth-child(even) { background: #f7f9fc; }
 .bets-table tbody tr:hover { background: #eef4e6; }
 
-/* Histórico: Data, Casa, Tipster, Aposta, Odd, Stake, Resultado, P/L, Ações */
-#view-historico .bets-table { min-width: 1060px; }
+/* Histórico: Data, Casa, Tipster, Aposta, Stake, Odd, Resultado, P/L, Ações */
+#view-historico .bets-table { min-width: 1110px; }
 #view-historico .bets-table th:nth-child(1), #view-historico .bets-table td:nth-child(1) { width: 110px; }
 #view-historico .bets-table th:nth-child(2), #view-historico .bets-table td:nth-child(2) { width: 110px; }
 #view-historico .bets-table th:nth-child(3), #view-historico .bets-table td:nth-child(3) { width: 130px; }
@@ -183,10 +184,10 @@ body {
   width: 300px;
   white-space: normal;
 }
-#view-historico .bets-table th:nth-child(5), #view-historico .bets-table td:nth-child(5) { width: 70px; }
-#view-historico .bets-table th:nth-child(6), #view-historico .bets-table td:nth-child(6) { width: 85px; }
+#view-historico .bets-table th:nth-child(5), #view-historico .bets-table td:nth-child(5) { width: 115px; }
+#view-historico .bets-table th:nth-child(6), #view-historico .bets-table td:nth-child(6) { width: 70px; }
 #view-historico .bets-table th:nth-child(7), #view-historico .bets-table td:nth-child(7) { width: 100px; text-align: center; }
-#view-historico .bets-table th:nth-child(8), #view-historico .bets-table td:nth-child(8) { width: 90px; text-align: center; }
+#view-historico .bets-table th:nth-child(8), #view-historico .bets-table td:nth-child(8) { width: 115px; text-align: center; }
 #view-historico .bets-table th:nth-child(9), #view-historico .bets-table td:nth-child(9) { width: 65px; }
 
 /* Ranking: Tipster, Apostas, Taxa de acerto, ROI, Resultado */
@@ -704,6 +705,14 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
 
 @media (max-width: 900px) {
   .layout { flex-direction: column; }
+  .content {
+    padding: 16px;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+    width: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
+  }
   .sidebar {
     width: auto;
     flex-direction: row;
@@ -711,6 +720,7 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
     align-items: center;
     gap: 10px 16px;
     padding: 14px 16px;
+    padding-top: max(14px, env(safe-area-inset-top));
   }
   .brand { flex: 1 1 auto; }
   .side-nav {
@@ -727,11 +737,73 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   .topbar h1 { font-size: 21px; }
   .cards-row, .cards-row:nth-of-type(2) { grid-template-columns: 1fr; }
   .bottom-row { grid-template-columns: 1fr; }
-  .content { padding: 16px; }
   .modal-grid { grid-template-columns: 1fr; }
   .modal-span-2 { grid-column: span 1; }
   #mes-chips, #tipster-chips { display: none; }
   .mobile-filter-select { display: block; }
+
+  /* nunca deixa o Safari dar zoom automático ao focar um campo (precisa de 16px+) */
+  .edit-input, .mobile-filter-select, .modal-grid input, .modal-grid select {
+    font-size: 16px;
+  }
+
+  /* alvos de toque maiores nos botões pequenos */
+  .resolve-btn, .row-action-btn {
+    width: 38px;
+    height: 38px;
+    font-size: 15px;
+  }
+  .bets-table th.sortable { padding: 16px; }
+
+  /* esconde a coluna Casa só na tabela do Histórico no mobile */
+  #view-historico .bets-table td:nth-child(2),
+  #view-historico .bets-table th:nth-child(2) { display: none; }
+
+  /* tabelas viram uma lista de cartões empilhados, em vez de rolar pro lado */
+  .table-card { overflow-x: visible; }
+  .bets-table { min-width: 0 !important; width: 100%; table-layout: auto; }
+  .bets-table thead { display: none; }
+  .bets-table, .bets-table tbody, .bets-table tr {
+    display: block;
+    width: 100%;
+  }
+  .bets-table tr {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin: 10px;
+    padding: 6px 14px;
+  }
+  .bets-table tr.banca-detail-row {
+    background: none;
+    border: none;
+    margin: 0 10px 10px;
+    padding: 0;
+  }
+  .bets-table td {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: auto !important;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+    white-space: normal;
+    overflow: visible;
+    text-overflow: initial;
+    text-align: right;
+  }
+  .bets-table tr:last-child td, .bets-table td:last-child { border-bottom: none; }
+  .bets-table td::before {
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-align: left;
+    flex-shrink: 0;
+  }
+  .bets-table td[data-label=""]::before,
+  .bets-table td:not([data-label])::before { content: none; }
 }
 
 @media (max-width: 480px) {

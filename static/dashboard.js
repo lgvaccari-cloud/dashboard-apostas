@@ -555,13 +555,13 @@ function renderHistorico() {
     if (editing) {
       return `
         <tr>
-          <td><input class="edit-input small" id="edit-data-${idx}" value="${esc(b.data)}"></td>
-          <td><input class="edit-input" id="edit-casa-${idx}" value="${esc(b.casa)}"></td>
-          <td><input class="edit-input" id="edit-tipster-${idx}" value="${esc(b.tipster)}"></td>
-          <td><input class="edit-input" id="edit-aposta-${idx}" value="${esc(b.aposta)}"></td>
-          <td><input class="edit-input small" id="edit-odd-${idx}" value="${esc(b.odd ? b.odd.toFixed(3).replace(".", ",") : "")}"></td>
-          <td><input class="edit-input small" id="edit-stake-${idx}" value="${esc(b.stake ? b.stake.toFixed(4).replace(".", ",") : "")}"></td>
-          <td>
+          <td data-label="Data"><input class="edit-input small" id="edit-data-${idx}" value="${esc(b.data)}"></td>
+          <td data-label="Casa"><input class="edit-input" id="edit-casa-${idx}" value="${esc(b.casa)}"></td>
+          <td data-label="Tipster"><input class="edit-input" id="edit-tipster-${idx}" value="${esc(b.tipster)}"></td>
+          <td data-label="Aposta"><input class="edit-input" id="edit-aposta-${idx}" value="${esc(b.aposta)}"></td>
+          <td data-label="Stake"><input class="edit-input small" id="edit-stake-${idx}" value="${esc(b.stake ? b.stake.toFixed(4).replace(".", ",") : "")}"></td>
+          <td data-label="Odd"><input class="edit-input small" id="edit-odd-${idx}" value="${esc(b.odd ? b.odd.toFixed(3).replace(".", ",") : "")}"></td>
+          <td data-label="Resultado">
             <select class="edit-input" id="edit-resultado-${idx}">
               <option value="" ${!b.resultado ? "selected" : ""}>Pendente</option>
               <option value="Green" ${b.resultado === "Green" ? "selected" : ""}>Green</option>
@@ -569,8 +569,8 @@ function renderHistorico() {
               <option value="Void" ${b.resultado === "Void" ? "selected" : ""}>Void</option>
             </select>
           </td>
-          <td>—</td>
-          <td>
+          <td data-label="P/L">—</td>
+          <td data-label="Ações">
             <div class="row-actions">
               <button class="row-action-btn save" title="Salvar" onclick="saveEdit(${idx})">✓</button>
               <button class="row-action-btn cancel" title="Cancelar" onclick="cancelEdit()">✕</button>
@@ -590,15 +590,15 @@ function renderHistorico() {
 
     return `
       <tr>
-        <td>${b.data || "—"}</td>
-        <td>${b.casa || "—"}</td>
-        <td>${b.tipster || "—"}</td>
-        <td>${b.aposta || "—"}</td>
-        <td>${b.odd ? b.odd.toFixed(3).replace(".", ",") : "—"}</td>
-        <td>${b.stake ? fmtDual(b.stake, b.stake_reais, false) : "—"}</td>
-        <td>${resolvedCell}</td>
-        <td class="uni-cell ${uniClass}">${isResolved(b) ? fmtDual(b.lucro_uni, b.lucro_reais, true) : "—"}</td>
-        <td><button class="row-action-btn" title="Editar" onclick="startEdit(${idx})">✎</button></td>
+        <td data-label="Data">${b.data || "—"}</td>
+        <td data-label="Casa">${b.casa || "—"}</td>
+        <td data-label="Tipster">${b.tipster || "—"}</td>
+        <td data-label="Aposta">${b.aposta || "—"}</td>
+        <td data-label="Stake">${b.stake ? fmtDual(b.stake, b.stake_reais, false) : "—"}</td>
+        <td data-label="Odd">${b.odd ? b.odd.toFixed(3).replace(".", ",") : "—"}</td>
+        <td data-label="Resultado">${resolvedCell}</td>
+        <td data-label="P/L" class="uni-cell ${uniClass}">${isResolved(b) ? fmtDual(b.lucro_uni, b.lucro_reais, true) : "—"}</td>
+        <td data-label="Ações"><button class="row-action-btn" title="Editar" onclick="startEdit(${idx})">✎</button></td>
       </tr>
     `;
   }).join("");
@@ -740,11 +740,11 @@ function renderRanking() {
     const cls = l.lucro > 0 ? "positive" : l.lucro < 0 ? "negative" : "";
     return `
       <tr>
-        <td>${l.tipster}</td>
-        <td>${l.apostas}</td>
-        <td>${l.taxa !== null ? l.taxa.toFixed(1).replace(".", ",") + "%" : "—"}</td>
-        <td>${l.roi !== null ? fmtPct(l.roi) : "—"}</td>
-        <td class="${cls}"><b>${fmtDual(l.lucro, l.lucroReais, true)}</b></td>
+        <td data-label="Tipster">${l.tipster}</td>
+        <td data-label="Apostas">${l.apostas}</td>
+        <td data-label="Taxa de acerto">${l.taxa !== null ? l.taxa.toFixed(1).replace(".", ",") + "%" : "—"}</td>
+        <td data-label="ROI">${l.roi !== null ? fmtPct(l.roi) : "—"}</td>
+        <td data-label="Resultado" class="${cls}"><b>${fmtDual(l.lucro, l.lucroReais, true)}</b></td>
       </tr>
     `;
   }).join("");
@@ -801,9 +801,9 @@ function renderBancasTable() {
   tbody.innerHTML = linhasOrdenadas.map(l => {
     const rowHtml = `
       <tr class="banca-casa-row" onclick="toggleBancaCasa('${escJs(l.casa)}')">
-        <td>${l.casa}</td>
-        <td>${l.contas} conta${l.contas === 1 ? "" : "s"} ativa${l.contas === 1 ? "" : "s"}</td>
-        <td><b>${l.banca.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</b></td>
+        <td data-label="Casa">${l.casa}</td>
+        <td data-label="Contas ativas">${l.contas} conta${l.contas === 1 ? "" : "s"} ativa${l.contas === 1 ? "" : "s"}</td>
+        <td data-label="Banca somada"><b>${l.banca.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</b></td>
       </tr>
     `;
     if (EXPANDED_CASA !== l.casa) return rowHtml;
@@ -1134,6 +1134,7 @@ function renderChart(resolvedBets) {
     plugins: [barValueLabelPlugin],
     options: {
       responsive: true,
+      ...(window.innerWidth <= 900 ? { aspectRatio: 1.3 } : {}),
       layout: { padding: { top: 24 } },
       interaction: { mode: "index", intersect: false },
       plugins: {
