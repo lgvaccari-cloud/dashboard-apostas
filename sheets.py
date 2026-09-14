@@ -201,6 +201,65 @@ def fetch_bets(force=False):
     return all_bets
 
 
+def _find_bancas_table(rows):
+    """Acha a linha de cabeçalho e as colunas Casa/Status/Total Banca da
+    tabela de contas por casa de apostas (uma tabela separada da de apostas,
+    em outra área da mesma aba).
+
+    Retorna (linha_de_dados, col_casa, col_status, col_total_banca), ou
+    (None, None, None, None) se não achar.
+    """
+    for row_idx, row in enumerate(rows):
+        lower = [c.strip().lower() for c in row]
+        if "casa" in lower and "status" in lower and "total banca" in lower:
+            return (
+                row_idx + 1,
+                lower.index("casa"),
+                lower.index("status"),
+                lower.index("total banca"),
+            )
+    return None, None, None, None
+
+
+def fetch_bancas_for_mes(mes):
+    """Lê a tabela de contas/bancas por casa de apostas dentro da aba `mes`,
+    soma o "Total Banca" das contas com Status "Ativa", agrupado por Casa.
+
+    Devolve uma lista de dicts [{"casa", "banca", "contas"}], ordenada da
+    maior banca pra menor. Devolve [] se não achar essa tabela na aba.
+    """
+    client = _get_client()
+    sheet_id = os.environ["SHEET_ID"]
+    sh = client.open_by_key(sheet_id)
+    ws = sh.worksheet(mes)
+    rows = ws.get_all_values()
+
+    data_start_row, col_casa, col_status, col_total_banca = _find_bancas_table(rows)
+    if col_casa is None:
+        return []
+
+    max_col = max(col_casa, col_status, col_total_banca)
+    somas = {}
+    contas = {}
+    for row in rows[data_start_row:]:
+        if len(row) <= max_col:
+            continue
+        casa = row[col_casa].strip()
+        status = row[col_status].strip().lower()
+        if not casa or status != "ativa":
+            continue
+        valor = _to_float(row[col_total_banca])
+        somas[casa] = somas.get(casa, 0.0) + valor
+        contas[casa] = contas.get(casa, 0) + 1
+
+    resultado = [
+        {"casa": casa, "banca": somas[casa], "contas": contas[casa]}
+        for casa in somas
+    ]
+    resultado.sort(key=lambda x: x["banca"], reverse=True)
+    return resultado
+
+
 def fetch_bets_for_mes(mes):
     """Lê só a aba (mês) indicada e devolve as apostas dela.
 

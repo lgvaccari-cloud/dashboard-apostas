@@ -2,7 +2,7 @@ import os
 from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 
-from sheets import fetch_bets, fetch_bets_for_mes, update_bet, add_bet
+from sheets import fetch_bets, fetch_bets_for_mes, update_bet, add_bet, fetch_bancas_for_mes
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "troque-essa-chave-em-producao")
@@ -109,6 +109,17 @@ def api_add_bet():
         fields = payload.get("fields", {})
         row = add_bet(mes, fields)
         return jsonify({"ok": True, "row": row})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/bancas/<mes>")
+@login_required
+def api_bancas(mes):
+    """Banca somada por casa de apostas (só contas Ativas), dentro do mês indicado."""
+    try:
+        bancas = fetch_bancas_for_mes(mes)
+        return jsonify({"ok": True, "bancas": bancas})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
