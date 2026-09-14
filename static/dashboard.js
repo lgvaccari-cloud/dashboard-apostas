@@ -1,8 +1,11 @@
-const USER_NAME = "Luís";
+const USER_NAME = "Luís Vaccari";
 const MESES_PT = [
   "janeiro", "fevereiro", "março", "abril", "maio", "junho",
   "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
 ];
+
+const ICON_MOON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+const ICON_SUN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`;
 
 let ALL_BETS = [];
 let ACTIVE_TIPSTER = null;
@@ -19,6 +22,18 @@ const RESOLVED_RESULTS = ["green", "red", "void"];
 
 function esc(value) {
   return String(value ?? "").replace(/"/g, "&quot;");
+}
+
+function formatMesLabel(mes) {
+  if (!mes) return mes;
+  return mes.charAt(0).toUpperCase() + mes.slice(1).toLowerCase();
+}
+
+function todayISO() {
+  const d = new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
 }
 
 function fmtUnits(n, sign) {
@@ -61,10 +76,23 @@ function setToday() {
   document.getElementById("greeting").textContent = `${saud}, ${USER_NAME}.`;
 }
 
+function updateDailySubtitle() {
+  const hoje = todayISO();
+  const betsHoje = ALL_BETS.filter(b => b.data_iso === hoje && isResolved(b));
+  const el = document.getElementById("subtitle");
+  if (!betsHoje.length) {
+    el.textContent = "Nenhuma aposta resolvida hoje ainda.";
+    return;
+  }
+  const somaUni = betsHoje.reduce((s, b) => s + b.lucro_uni, 0);
+  const somaReais = betsHoje.reduce((s, b) => s + b.lucro_reais, 0);
+  el.textContent = `Você está ${fmtDual(somaUni, somaReais, true)} no dia`;
+}
+
 // ---------- Modo noturno ----------
 function setDarkMode(on) {
   document.body.classList.toggle("dark-mode", on);
-  document.getElementById("toggle-dark").textContent = on ? "☀️" : "🌙";
+  document.getElementById("toggle-dark").innerHTML = on ? ICON_SUN : ICON_MOON;
   try { localStorage.setItem("painel_dark_mode", on ? "1" : "0"); } catch (e) {}
   if (ALL_BETS.length) renderAll(); // recria o gráfico com as cores certas
 }
@@ -78,7 +106,6 @@ function setCurrency(showBRL) {
   SHOW_BRL = showBRL;
   document.getElementById("toggle-uni").classList.toggle("active", !showBRL);
   document.getElementById("toggle-real").classList.toggle("active", showBRL);
-  document.getElementById("subtitle").textContent = showBRL ? "Valores em reais." : "Valores em unidades.";
   renderAll();
 }
 
@@ -86,11 +113,11 @@ document.getElementById("toggle-uni").addEventListener("click", () => setCurrenc
 document.getElementById("toggle-real").addEventListener("click", () => setCurrency(true));
 
 // ---------- Carregar dados ----------
-async function loadData() {
+async function loadData(force) {
   const errorBox = document.getElementById("error-box");
   errorBox.style.display = "none";
   try {
-    const res = await fetch("/api/bets");
+    const res = await fetch(force ? "/api/bets?force=1" : "/api/bets");
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || "Erro desconhecido");
     ALL_BETS = data.bets;
@@ -98,10 +125,23 @@ async function loadData() {
     tryAutoSelectMonth();
     renderMesChips();
     renderChips();
+    populateNewBetMesOptions();
     renderAll();
   } catch (err) {
     errorBox.style.display = "block";
     errorBox.textContent = "Não consegui carregar os dados da planilha: " + err.message;
+  }
+}
+
+async function refreshMes(mes) {
+  try {
+    const res = await fetch(`/api/bets_mes/${encodeURIComponent(mes)}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Erro ao atualizar");
+    ALL_BETS = ALL_BETS.filter(b => b.mes !== mes).concat(data.bets);
+    renderAll();
+  } catch (err) {
+    console.error("Falha ao atualizar o mês:", err);
   }
 }
 
@@ -156,7 +196,7 @@ function renderMesChips() {
   meses.forEach(m => {
     const chip = document.createElement("button");
     chip.className = "chip" + (ACTIVE_MES === m ? " active" : "");
-    chip.textContent = m;
+    chip.textContent = formatMesLabel(m);
     chip.onclick = () => {
       ACTIVE_MES = (ACTIVE_MES === m) ? null : m;
       ACTIVE_TIPSTER = null; // a lista de tipsters muda de mês pra mês
@@ -182,7 +222,7 @@ function renderActiveFiltersBar() {
   const bar = document.getElementById("active-filters-bar");
   const container = document.getElementById("active-filter-chips");
   const filtros = [];
-  if (ACTIVE_MES) filtros.push({ label: `Mês: ${ACTIVE_MES}`, clear: () => { ACTIVE_MES = null; ACTIVE_TIPSTER = null; } });
+  if (ACTIVE_MES) filtros.push({ label: `Mês: ${formatMesLabel(ACTIVE_MES)}`, clear: () => { ACTIVE_MES = null; ACTIVE_TIPSTER = null; } });
   if (ACTIVE_TIPSTER) filtros.push({ label: `Tipster: ${ACTIVE_TIPSTER}`, clear: () => { ACTIVE_TIPSTER = null; } });
 
   if (!filtros.length) {
@@ -241,33 +281,10 @@ document.getElementById("clear-pending-filter").addEventListener("click", () => 
   renderHistorico();
 });
 
-// ---------- Selos de casa ----------
-const CASA_STYLE = {
-  "bet365":      { initials: "B3", color: "#1c5c34" },
-  "betbra":      { initials: "BR", color: "#1a2b52" },
-  "bolsa":       { initials: "BR", color: "#1a2b52" },
-  "superbet":    { initials: "SU", color: "#7a1220" },
-  "betano":      { initials: "BA", color: "#e8631c" },
-  "sportingbet": { initials: "SP", color: "#1c3f7a" },
-  "1win":        { initials: "1W", color: "#1a1a1a" },
-  "betboo":      { initials: "BB", color: "#6b1f3d" },
-};
-
-function casaBadge(casa) {
-  const key = (casa || "").toLowerCase();
-  const style = CASA_STYLE[key] || { initials: (casa || "?").slice(0, 2).toUpperCase(), color: "#7a8494" };
-  return `
-    <span class="casa-cell">
-      <span class="casa-badge" style="background:${style.color}">${style.initials}</span>
-      ${casa || "—"}
-    </span>
-  `;
-}
-
 function resultTag(resultado) {
   const r = (resultado || "").toLowerCase();
   if (r === "green") return `<span class="result-tag green">✓</span>`;
-  if (r === "red") return `<span class="result-tag red">✗</span>`;
+  if (r === "red") return `<span class="result-tag red">✕</span>`;
   if (r === "void") return `<span class="result-tag void">–</span>`;
   return `<span class="result-tag pending">•</span>`;
 }
@@ -276,6 +293,11 @@ function resultTag(resultado) {
 async function resolveBetByIndex(idx, resultado) {
   const bet = CURRENT_HISTORICO_BETS[idx];
   if (!bet) return;
+
+  const resultadoAnterior = bet.resultado;
+  bet.resultado = resultado;
+  renderHistorico();
+
   try {
     const res = await fetch("/api/resolve", {
       method: "POST",
@@ -284,9 +306,10 @@ async function resolveBetByIndex(idx, resultado) {
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || "Erro ao marcar resultado");
-    await loadData();
-    switchView("historico");
+    setTimeout(() => refreshMes(bet.mes), 900);
   } catch (err) {
+    bet.resultado = resultadoAnterior;
+    renderHistorico();
     alert("Não consegui marcar o resultado: " + err.message);
   }
 }
@@ -310,11 +333,20 @@ async function saveEdit(idx) {
     casa: document.getElementById(`edit-casa-${idx}`).value,
     tipster: document.getElementById(`edit-tipster-${idx}`).value,
     aposta: document.getElementById(`edit-aposta-${idx}`).value,
-    mercado: document.getElementById(`edit-mercado-${idx}`).value,
     odd: document.getElementById(`edit-odd-${idx}`).value,
     stake: document.getElementById(`edit-stake-${idx}`).value,
     resultado: document.getElementById(`edit-resultado-${idx}`).value,
   };
+
+  const anterior = { ...bet };
+  bet.casa = updates.casa;
+  bet.tipster = updates.tipster;
+  bet.aposta = updates.aposta;
+  bet.resultado = updates.resultado;
+  bet.data = updates.data;
+  EDITING_IDX = null;
+  renderHistorico();
+
   try {
     const res = await fetch("/api/update_bet", {
       method: "POST",
@@ -323,10 +355,10 @@ async function saveEdit(idx) {
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || "Erro ao salvar");
-    EDITING_IDX = null;
-    await loadData();
-    switchView("historico");
+    setTimeout(() => refreshMes(bet.mes), 900);
   } catch (err) {
+    Object.assign(bet, anterior);
+    renderHistorico();
     alert("Não consegui salvar: " + err.message);
   }
 }
@@ -351,12 +383,10 @@ function renderHistorico() {
     if (editing) {
       return `
         <tr>
-          <td>${b.mes || "—"}</td>
           <td><input class="edit-input small" id="edit-data-${idx}" value="${esc(b.data)}"></td>
           <td><input class="edit-input" id="edit-casa-${idx}" value="${esc(b.casa)}"></td>
           <td><input class="edit-input" id="edit-tipster-${idx}" value="${esc(b.tipster)}"></td>
           <td><input class="edit-input" id="edit-aposta-${idx}" value="${esc(b.aposta)}"></td>
-          <td><input class="edit-input" id="edit-mercado-${idx}" value="${esc(b.mercado)}"></td>
           <td><input class="edit-input small" id="edit-odd-${idx}" value="${esc(b.odd ? b.odd.toFixed(3).replace(".", ",") : "")}"></td>
           <td><input class="edit-input small" id="edit-stake-${idx}" value="${esc(b.stake ? b.stake.toFixed(4).replace(".", ",") : "")}"></td>
           <td>
@@ -382,18 +412,16 @@ function renderHistorico() {
       ? resultTag(b.resultado)
       : `<div class="resolve-actions">
            <button class="resolve-btn green" title="Green" onclick="resolveBetByIndex(${idx}, 'Green')">✓</button>
-           <button class="resolve-btn red" title="Red" onclick="resolveBetByIndex(${idx}, 'Red')">✗</button>
+           <button class="resolve-btn red" title="Red" onclick="resolveBetByIndex(${idx}, 'Red')">✕</button>
            <button class="resolve-btn void" title="Void" onclick="resolveBetByIndex(${idx}, 'Void')">–</button>
          </div>`;
 
     return `
       <tr>
-        <td>${b.mes || "—"}</td>
         <td>${b.data || "—"}</td>
-        <td>${casaBadge(b.casa)}</td>
+        <td>${b.casa || "—"}</td>
         <td>${b.tipster || "—"}</td>
         <td>${b.aposta || "—"}</td>
-        <td>${b.mercado || "—"}</td>
         <td>${b.odd ? b.odd.toFixed(3).replace(".", ",") : "—"}</td>
         <td>${b.stake ? fmtDual(b.stake, b.stake_reais, false) : "—"}</td>
         <td>${resolvedCell}</td>
@@ -412,8 +440,80 @@ function currentBets() {
   return result;
 }
 
+// ---------- Modal "Nova aposta" ----------
+function populateNewBetMesOptions() {
+  const select = document.getElementById("new-bet-mes");
+  const meses = [...new Set(ALL_BETS.map(b => b.mes).filter(Boolean))];
+  const atual = select.value;
+  select.innerHTML = meses.map(m => `<option value="${esc(m)}">${esc(formatMesLabel(m))}</option>`).join("");
+  if (ACTIVE_MES && meses.includes(ACTIVE_MES)) {
+    select.value = ACTIVE_MES;
+  } else if (meses.includes(atual)) {
+    select.value = atual;
+  }
+}
+
+function openNewBetModal() {
+  populateNewBetMesOptions();
+  const hoje = new Date();
+  const dd = String(hoje.getDate()).padStart(2, "0");
+  const mm = String(hoje.getMonth() + 1).padStart(2, "0");
+  document.getElementById("new-bet-data").value = `${dd}/${mm}/${hoje.getFullYear()}`;
+  document.getElementById("new-bet-casa").value = "";
+  document.getElementById("new-bet-tipster").value = "";
+  document.getElementById("new-bet-aposta").value = "";
+  document.getElementById("new-bet-mercado").value = "";
+  document.getElementById("new-bet-tipo").value = "";
+  document.getElementById("new-bet-odd").value = "";
+  document.getElementById("new-bet-stake").value = "";
+  document.getElementById("new-bet-resultado").value = "";
+  document.getElementById("new-bet-overlay").style.display = "flex";
+}
+
+function closeNewBetModal() {
+  document.getElementById("new-bet-overlay").style.display = "none";
+}
+
+document.getElementById("new-bet-btn").addEventListener("click", openNewBetModal);
+document.getElementById("new-bet-cancel").addEventListener("click", closeNewBetModal);
+document.getElementById("new-bet-overlay").addEventListener("click", (e) => {
+  if (e.target.id === "new-bet-overlay") closeNewBetModal();
+});
+
+document.getElementById("new-bet-save").addEventListener("click", async () => {
+  const mes = document.getElementById("new-bet-mes").value;
+  const fields = {
+    data: document.getElementById("new-bet-data").value,
+    casa: document.getElementById("new-bet-casa").value,
+    tipster: document.getElementById("new-bet-tipster").value,
+    aposta: document.getElementById("new-bet-aposta").value,
+    mercado: document.getElementById("new-bet-mercado").value,
+    tipo: document.getElementById("new-bet-tipo").value,
+    odd: document.getElementById("new-bet-odd").value,
+    stake: document.getElementById("new-bet-stake").value,
+    resultado: document.getElementById("new-bet-resultado").value,
+  };
+  if (!mes) { alert("Escolha um mês."); return; }
+  if (!fields.casa || !fields.tipster) { alert("Preencha ao menos Casa e Tipster."); return; }
+
+  try {
+    const res = await fetch("/api/add_bet", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mes, fields }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Erro ao salvar");
+    closeNewBetModal();
+    setTimeout(() => refreshMes(mes), 900);
+  } catch (err) {
+    alert("Não consegui salvar a aposta nova: " + err.message);
+  }
+});
+
 // ---------- Visão geral (cards + gráfico) ----------
 function renderAll() {
+  updateDailySubtitle();
   renderActiveFiltersBar();
 
   const bets = currentBets();
@@ -426,7 +526,9 @@ function renderAll() {
   const volumeApostadoResolvedReais = resolved.reduce((s, b) => s + b.stake_reais, 0);
   const roi = volumeApostadoResolved > 0 ? (resultadoLiquido / volumeApostadoResolved) * 100 : 0;
 
-  document.getElementById("metric-liquido").textContent = fmtDual(resultadoLiquido, resultadoLiquidoReais, true);
+  const liquidoEl = document.getElementById("metric-liquido");
+  liquidoEl.textContent = fmtDual(resultadoLiquido, resultadoLiquidoReais, true);
+  liquidoEl.className = "card-value" + (resultadoLiquido > 0 ? " positive" : resultadoLiquido < 0 ? " negative" : "");
   document.getElementById("metric-liquido-foot").textContent =
     `ROI sobre ${fmtDual(volumeApostadoResolved, volumeApostadoResolvedReais, false)} resolvido`;
 
@@ -485,8 +587,8 @@ function renderAll() {
     melhorTipster ? `${fmtDual(melhorValor, porTipsterReais[melhorTipster] || 0, true)} de resultado` : "Sem dados suficientes";
 
   document.getElementById("side-filtered").textContent =
-    [ACTIVE_TIPSTER, ACTIVE_MES].filter(Boolean).length
-      ? `Filtrado: ${[ACTIVE_TIPSTER, ACTIVE_MES].filter(Boolean).join(" · ")}`
+    [ACTIVE_TIPSTER, ACTIVE_MES ? formatMesLabel(ACTIVE_MES) : null].filter(Boolean).length
+      ? `Filtrado: ${[ACTIVE_TIPSTER, ACTIVE_MES ? formatMesLabel(ACTIVE_MES) : null].filter(Boolean).join(" · ")}`
       : "Todas as apostas";
   document.getElementById("chart-title").textContent =
     ACTIVE_TIPSTER ? `Resultado acumulado (${ACTIVE_TIPSTER})` : "Resultado acumulado";
@@ -556,10 +658,12 @@ function renderChart(resolvedBets) {
   const ctx = document.getElementById("results-chart").getContext("2d");
   if (chartInstance) chartInstance.destroy();
 
-  // desenha o valor de cada barra em cima dela (sem precisar de plugin externo)
+  // desenha o valor de cada barra em cima dela — só quando um mês específico
+  // está filtrado (com muitos dias juntos, os números viram bagunça)
   const barValueLabelPlugin = {
     id: "barValueLabels",
     afterDatasetsDraw(chart) {
+      if (!ACTIVE_MES) return;
       const meta = chart.getDatasetMeta(0);
       const dataset = chart.data.datasets[0];
       const c = chart.ctx;
@@ -638,9 +742,10 @@ function renderChart(resolvedBets) {
   });
 }
 
-document.getElementById("refresh-btn").addEventListener("click", loadData);
+document.getElementById("refresh-btn").addEventListener("click", () => loadData(true));
 
 // aplica o modo noturno salvo (se houver) antes de tudo
+document.getElementById("toggle-dark").innerHTML = ICON_MOON;
 try {
   setDarkMode(localStorage.getItem("painel_dark_mode") === "1");
 } catch (e) {}
