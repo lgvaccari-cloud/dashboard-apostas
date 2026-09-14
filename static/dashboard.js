@@ -6,6 +6,9 @@ const MESES_PT = [
 
 const ICON_MOON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
 const ICON_SUN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`;
+const ICON_TREND_UP = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg>`;
+const ICON_TREND_DOWN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l6 6 4-4 8 8"/><path d="M17 17h4v-4"/></svg>`;
+const ICON_TARGET = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>`;
 
 let ALL_BETS = [];
 let ACTIVE_TIPSTER = null;
@@ -86,7 +89,9 @@ function updateDailySubtitle() {
   }
   const somaUni = betsHoje.reduce((s, b) => s + b.lucro_uni, 0);
   const somaReais = betsHoje.reduce((s, b) => s + b.lucro_reais, 0);
-  el.textContent = `Você está ${fmtDual(somaUni, somaReais, true)} no dia`;
+  const valorRef = SHOW_BRL ? somaReais : somaUni;
+  const cor = valorRef >= 0 ? "var(--green)" : "var(--red)";
+  el.innerHTML = `Você está <b style="color:${cor}">${fmtDual(somaUni, somaReais, true)}</b> no dia`;
 }
 
 // ---------- Modo noturno ----------
@@ -579,12 +584,25 @@ function renderAll() {
     porTipsterReais[b.tipster] = (porTipsterReais[b.tipster] || 0) + b.lucro_reais;
   });
   let melhorTipster = null, melhorValor = -Infinity;
+  let piorTipster = null, piorValor = Infinity;
   Object.entries(porTipster).forEach(([t, v]) => {
     if (v > melhorValor) { melhorTipster = t; melhorValor = v; }
+    if (v < piorValor) { piorTipster = t; piorValor = v; }
   });
+
+  const mostrarMelhorPior = !ACTIVE_TIPSTER;
+  document.getElementById("melhor-tipster-block").style.display = mostrarMelhorPior ? "" : "none";
+  document.getElementById("pior-tipster-block").style.display = mostrarMelhorPior ? "" : "none";
+
   document.getElementById("metric-melhor-tipster").textContent = melhorTipster || "—";
-  document.getElementById("metric-melhor-tipster-foot").textContent =
-    melhorTipster ? `${fmtDual(melhorValor, porTipsterReais[melhorTipster] || 0, true)} de resultado` : "Sem dados suficientes";
+  document.getElementById("metric-melhor-tipster-foot").innerHTML = melhorTipster
+    ? `<b class="${melhorValor >= 0 ? "positive" : "negative"}">${fmtDual(melhorValor, porTipsterReais[melhorTipster] || 0, true)}</b> de resultado`
+    : "Sem dados suficientes";
+
+  document.getElementById("metric-pior-tipster").textContent = piorTipster || "—";
+  document.getElementById("metric-pior-tipster-foot").innerHTML = piorTipster
+    ? `<b class="${piorValor >= 0 ? "positive" : "negative"}">${fmtDual(piorValor, porTipsterReais[piorTipster] || 0, true)}</b> de resultado`
+    : "Sem dados suficientes";
 
   document.getElementById("side-filtered").textContent =
     [ACTIVE_TIPSTER, ACTIVE_MES ? formatMesLabel(ACTIVE_MES) : null].filter(Boolean).length
@@ -643,13 +661,16 @@ function renderChart(resolvedBets) {
 
   const summaryEl = document.getElementById("chart-summary");
   if (!dias.length) {
-    summaryEl.textContent = "Sem apostas resolvidas nesse filtro ainda.";
+    summaryEl.innerHTML = `<div class="chart-summary-row">Sem apostas resolvidas nesse filtro ainda.</div>`;
   } else {
-    const fimCor = (SHOW_BRL ? fimReais : fimUni) >= 0 ? "var(--green)" : "var(--red)";
-    summaryEl.innerHTML =
-      `${resolvedBets.length} apostas em ${dias.length} dias · pico <b>${fmtDual(picoUni, picoReais, false)}</b>` +
-      ` · maior queda <b style="color:var(--red)">${fmtDual(Math.abs(maiorQuedaUni), Math.abs(maiorQuedaReais), false)}</b>` +
-      ` · fim <b style="color:${fimCor}">${fmtDual(fimUni, fimReais, true)}</b>`;
+    const fimVal = SHOW_BRL ? fimReais : fimUni;
+    const fimCor = fimVal >= 0 ? "var(--green)" : "var(--red)";
+    summaryEl.innerHTML = `
+      <div class="chart-summary-row">${resolvedBets.length} apostas em ${dias.length} dias</div>
+      <div class="chart-summary-row">${ICON_TREND_UP} Pico: <b style="color:var(--green)">${fmtDual(picoUni, picoReais, true)}</b></div>
+      <div class="chart-summary-row">${ICON_TREND_DOWN} Maior Drawdown: <b style="color:var(--red)">${fmtDual(Math.abs(maiorQuedaUni), Math.abs(maiorQuedaReais), false)}</b></div>
+      <div class="chart-summary-row">${ICON_TARGET} Atual: <b style="color:${fimCor}">${fmtDual(fimUni, fimReais, true)}</b></div>
+    `;
   }
 
   const diarioDisplay = SHOW_BRL ? diarioSerieReais : diarioSerieUni;
