@@ -568,6 +568,40 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   font-size: 13px;
 }
 .side-pill.negative { background: var(--red-bg); color: var(--red); }
+.ultima-tip-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 12.5px;
+  border-top: 1px solid var(--border);
+}
+.ultima-tip-line:first-child { border-top: none; }
+.ultima-tip-aposta {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+.ultima-tip-valor { font-weight: 700; white-space: nowrap; }
+.ultima-tip-line .result-tag { width: 18px; height: 18px; font-size: 9px; flex-shrink: 0; }
+
+.ultimas-tips-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+.ultima-tip-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.ultima-tip-aposta {
+  flex: 1;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ultima-tip-valor { font-weight: 700; white-space: nowrap; }
 .progress-track {
   height: 6px;
   background: #eef1f6;

@@ -932,6 +932,24 @@ function renderAll() {
   document.getElementById("melhor-tipster-block").style.display = mostrarMelhorPior ? "" : "none";
   document.getElementById("pior-tipster-block").style.display = mostrarMelhorPior ? "" : "none";
 
+  document.getElementById("ultimas-tips-block").style.display = ACTIVE_TIPSTER ? "" : "none";
+  if (ACTIVE_TIPSTER) {
+    const ultimas = bets.slice()
+      .sort((a, b) => (b.data_iso || "").localeCompare(a.data_iso || ""))
+      .slice(0, 10);
+    document.getElementById("ultimas-tips-list").innerHTML = ultimas.map(b => {
+      const cls = b.lucro_uni > 0 ? "positive" : b.lucro_uni < 0 ? "negative" : "";
+      const valor = isResolved(b) ? fmtDual(b.lucro_uni, b.lucro_reais, true) : "—";
+      return `
+        <div class="ultima-tip-line">
+          <span class="ultima-tip-aposta" title="${esc(b.aposta)}">${b.aposta || "—"}</span>
+          <span class="ultima-tip-valor ${cls}">${valor}</span>
+          ${resultTag(b.resultado)}
+        </div>
+      `;
+    }).join("") || `<div class="ultima-tip-line">Sem apostas nesse filtro ainda.</div>`;
+  }
+
   const periodoTexto = ACTIVE_MES ? "no mês" : "no ano";
 
   document.getElementById("metric-melhor-tipster").textContent = melhorTipster || "—";
@@ -943,6 +961,28 @@ function renderAll() {
   document.getElementById("metric-pior-tipster-foot").innerHTML = piorTipster
     ? `<b class="${piorValor >= 0 ? "positive" : "negative"}">${fmtDual(piorValor, porTipsterReais[piorTipster] || 0, true)}</b> ${periodoTexto}`
     : "Sem dados suficientes";
+
+  const ultimasTipsBlock = document.getElementById("ultimas-tips-block");
+  if (ACTIVE_TIPSTER) {
+    ultimasTipsBlock.style.display = "";
+    const ultimas = bets
+      .filter(isResolved)
+      .slice()
+      .sort((a, b) => (b.data_iso || "").localeCompare(a.data_iso || ""))
+      .slice(0, 10);
+    const listEl = document.getElementById("ultimas-tips-list");
+    listEl.innerHTML = ultimas.length
+      ? ultimas.map(b => `
+          <div class="ultima-tip-line">
+            <span class="ultima-tip-aposta" title="${esc(b.aposta)}">${b.aposta || "—"}</span>
+            <span class="ultima-tip-valor ${b.lucro_uni > 0 ? "positive" : b.lucro_uni < 0 ? "negative" : ""}">${fmtDual(b.lucro_uni, b.lucro_reais, true)}</span>
+            ${resultTag(b.resultado)}
+          </div>
+        `).join("")
+      : `<span class="side-note">Sem apostas resolvidas ainda.</span>`;
+  } else {
+    ultimasTipsBlock.style.display = "none";
+  }
 
   document.getElementById("side-filtered").textContent =
     [ACTIVE_TIPSTER, ACTIVE_MES ? formatMesLabel(ACTIVE_MES) : null].filter(Boolean).length
