@@ -14,6 +14,7 @@ let ALL_BETS = [];
 let ACTIVE_TIPSTER = null;
 let ACTIVE_MES = null;
 let ONLY_PENDING = false;
+let ONLY_TODAY = false;
 let AUTO_MES_APPLIED = false;
 let chartInstance = null;
 let CURRENT_VIEW = "geral";
@@ -267,11 +268,16 @@ document.getElementById("clear-all-filters").addEventListener("click", () => {
 // ---------- Navegação entre visões ----------
 function switchView(view) {
   CURRENT_VIEW = view;
-  document.getElementById("view-geral").style.display = view === "geral" ? "" : "none";
-  document.getElementById("view-historico").style.display = view === "historico" ? "" : "none";
+  ["geral", "historico", "ranking", "bancas"].forEach(v => {
+    document.getElementById(`view-${v}`).style.display = (v === view) ? "" : "none";
+  });
   document.getElementById("nav-geral").classList.toggle("active", view === "geral");
   document.getElementById("nav-historico").classList.toggle("active", view === "historico");
+  document.getElementById("nav-ranking").classList.toggle("active", view === "ranking");
+  document.getElementById("nav-bancas").classList.toggle("active", view === "bancas");
   if (view === "historico") renderHistorico();
+  if (view === "ranking") renderRanking();
+  if (view === "bancas") loadBancas();
 }
 
 document.getElementById("nav-geral").addEventListener("click", () => switchView("geral"));
@@ -279,6 +285,8 @@ document.getElementById("nav-historico").addEventListener("click", () => {
   ONLY_PENDING = false;
   switchView("historico");
 });
+document.getElementById("nav-ranking").addEventListener("click", () => switchView("ranking"));
+document.getElementById("nav-bancas").addEventListener("click", () => switchView("bancas"));
 
 document.getElementById("card-aberto").addEventListener("click", () => {
   ONLY_PENDING = true;
@@ -288,6 +296,12 @@ document.getElementById("card-aberto").addEventListener("click", () => {
 
 document.getElementById("clear-pending-filter").addEventListener("click", () => {
   ONLY_PENDING = false;
+  renderHistorico();
+});
+
+document.getElementById("filter-today").addEventListener("click", () => {
+  ONLY_TODAY = !ONLY_TODAY;
+  document.getElementById("filter-today").classList.toggle("active", ONLY_TODAY);
   renderHistorico();
 });
 
@@ -447,6 +461,7 @@ function currentBets() {
   if (ACTIVE_TIPSTER) result = result.filter(b => b.tipster === ACTIVE_TIPSTER);
   if (ACTIVE_MES) result = result.filter(b => b.mes === ACTIVE_MES);
   if (ONLY_PENDING) result = result.filter(b => !isResolved(b));
+  if (ONLY_TODAY) result = result.filter(b => b.data_iso === todayISO());
   return result;
 }
 
@@ -520,6 +535,89 @@ document.getElementById("new-bet-save").addEventListener("click", async () => {
     alert("Não consegui salvar a aposta nova: " + err.message);
   }
 });
+
+// ---------- Ranking de tipsters ----------
+function renderRanking() {
+  const tbody = document.getElementById("ranking-table-body");
+  if (!tbody) return;
+
+  const bets = ACTIVE_MES ? ALL_BETS.filter(b => b.mes === ACTIVE_MES) : ALL_BETS;
+  const porTipster = {};
+
+  bets.forEach(b => {
+    if (!b.tipster) return;
+    if (!porTipster[b.tipster]) {
+      porTipster[b.tipster] = { apostas: 0, greens: 0, reds: 0, stake: 0, stakeReais: 0, lucro: 0, lucroReais: 0 };
+    }
+    const t = porTipster[b.tipster];
+    t.apostas += 1;
+    if (isResolved(b)) {
+      t.stake += b.stake;
+      t.stakeReais += b.stake_reais;
+      t.lucro += b.lucro_uni;
+      t.lucroReais += b.lucro_reais;
+      const r = (b.resultado || "").toLowerCase();
+      if (r === "green") t.greens += 1;
+      if (r === "red") t.reds += 1;
+    }
+  });
+
+  const linhas = Object.entries(porTipster).map(([tipster, t]) => {
+    const decisoes = t.greens + t.reds;
+    const taxa = decisoes > 0 ? (t.greens / decisoes) * 100 : null;
+    const roi = t.stake > 0 ? (t.lucro / t.stake) * 100 : null;
+    return { tipster, ...t, taxa, roi };
+  }).sort((a, b) => b.lucro - a.lucro);
+
+  if (!linhas.length) {
+    tbody.innerHTML = `<tr><td colspan="5">Sem apostas nesse filtro ainda.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = linhas.map(l => {
+    const cls = l.lucro > 0 ? "positive" : l.lucro < 0 ? "negative" : "";
+    return `
+      <tr>
+        <td>${l.tipster}</td>
+        <td>${l.apostas}</td>
+        <td>${l.taxa !== null ? l.taxa.toFixed(1).replace(".", ",") + "%" : "—"}</td>
+        <td>${l.roi !== null ? fmtPct(l.roi) : "—"}</td>
+        <td class="${cls}"><b>${fmtDual(l.lucro, l.lucroReais, true)}</b></td>
+      </tr>
+    `;
+  }).join("");
+}
+
+// ---------- Bancas por casa ----------
+async function loadBancas() {
+  const tbody = document.getElementById("bancas-table-body");
+  if (!tbody) return;
+
+  if (!ACTIVE_MES) {
+    tbody.innerHTML = `<tr><td colspan="3">Selecione um mês no filtro pra ver as bancas desse mês.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = `<tr><td colspan="3">Carregando...</td></tr>`;
+  try {
+    const res = await fetch(`/api/bancas/${encodeURIComponent(ACTIVE_MES)}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Erro ao carregar bancas");
+    if (!data.bancas.length) {
+      tbody.innerHTML = `<tr><td colspan="3">Não encontrei a tabela de bancas nessa aba.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = data.bancas.map(b => `
+      <tr>
+        <td>${b.casa}</td>
+        <td>${b.contas} conta${b.contas === 1 ? "" : "s"} ativa${b.contas === 1 ? "" : "s"}</td>
+        <td><b>${b.banca.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</b></td>
+      </tr>
+    `).join("");
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="3">Erro: ${err.message}</td></tr>`;
+  }
+}
 
 // ---------- Visão geral (cards + gráfico) ----------
 function renderAll() {
@@ -624,6 +722,8 @@ function renderAll() {
 
   renderChart(resolved);
   renderHistorico();
+  if (CURRENT_VIEW === "ranking") renderRanking();
+  if (CURRENT_VIEW === "bancas") loadBancas();
 }
 
 // ---------- Gráfico ----------
