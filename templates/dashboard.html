@@ -251,46 +251,73 @@
   <div class="modal-overlay" id="new-bet-overlay" style="display:none">
     <div class="modal-card">
       <h2>Nova aposta</h2>
-      <div class="modal-grid">
-        <label>Mês
-          <select id="new-bet-mes"></select>
-        </label>
-        <label>Data
-          <input type="text" id="new-bet-data" placeholder="dd/mm/aaaa">
-        </label>
-        <label>Casa
-          <input type="text" id="new-bet-casa" placeholder="Bet365">
-        </label>
-        <label>Tipster
-          <input type="text" id="new-bet-tipster" placeholder="Nome do tipster">
-        </label>
-        <label class="modal-span-2">Aposta
-          <input type="text" id="new-bet-aposta" placeholder="Descrição da aposta">
-        </label>
-        <label>Mercado
-          <input type="text" id="new-bet-mercado" placeholder="Under, HC, ML...">
-        </label>
-        <label>Tipo
-          <input type="text" id="new-bet-tipo" placeholder="Pré, Live...">
-        </label>
-        <label>Odd
-          <input type="text" id="new-bet-odd" placeholder="1,85">
-        </label>
-        <label>Stake (unidades)
-          <input type="text" id="new-bet-stake" placeholder="0,75">
-        </label>
-        <label>Resultado
-          <select id="new-bet-resultado">
-            <option value="">Pendente</option>
-            <option value="Green">Green</option>
-            <option value="Red">Red</option>
-            <option value="Void">Void</option>
-          </select>
-        </label>
+
+      <div class="modal-mode-toggle">
+        <button class="toggle-btn active" id="new-bet-mode-manual">Manual</button>
+        <button class="toggle-btn" id="new-bet-mode-print">Por print</button>
       </div>
-      <div class="modal-actions">
-        <button class="modal-btn cancel" id="new-bet-cancel">Cancelar</button>
-        <button class="modal-btn save" id="new-bet-save">Salvar aposta</button>
+
+      <div id="new-bet-manual-form">
+        <div class="modal-grid">
+          <label>Mês
+            <select id="new-bet-mes"></select>
+          </label>
+          <label>Data
+            <input type="text" id="new-bet-data" placeholder="dd/mm/aaaa">
+          </label>
+          <label>Casa
+            <input type="text" id="new-bet-casa" placeholder="Bet365">
+          </label>
+          <label>Tipster
+            <input type="text" id="new-bet-tipster" placeholder="Nome do tipster">
+          </label>
+          <label class="modal-span-2">Aposta
+            <input type="text" id="new-bet-aposta" placeholder="Descrição da aposta">
+          </label>
+          <label>Mercado
+            <input type="text" id="new-bet-mercado" placeholder="Under, HC, ML...">
+          </label>
+          <label>Tipo
+            <input type="text" id="new-bet-tipo" placeholder="Pré, Live...">
+          </label>
+          <label>Odd
+            <input type="text" id="new-bet-odd" placeholder="1,85">
+          </label>
+          <label>Stake (unidades)
+            <input type="text" id="new-bet-stake" placeholder="0,75">
+          </label>
+          <label>Resultado
+            <select id="new-bet-resultado">
+              <option value="">Pendente</option>
+              <option value="Green">Green</option>
+              <option value="Red">Red</option>
+              <option value="Void">Void</option>
+            </select>
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button class="modal-btn cancel" id="new-bet-cancel">Cancelar</button>
+          <button class="modal-btn save" id="new-bet-save">Salvar aposta</button>
+        </div>
+      </div>
+
+      <div id="new-bet-print-form" style="display:none">
+        <div class="modal-grid">
+          <label>Mês
+            <select id="new-bet-print-mes"></select>
+          </label>
+          <label class="modal-span-2">Print da aposta
+            <input type="file" id="new-bet-print-file" accept="image/*">
+          </label>
+          <label class="modal-span-2">Legenda (opcional — nome do tipster, "somar", "duplicar"...)
+            <input type="text" id="new-bet-print-caption" placeholder="Ex: Jarvis Pré">
+          </label>
+        </div>
+        <div id="new-bet-print-feedback"></div>
+        <div class="modal-actions">
+          <button class="modal-btn cancel" id="new-bet-print-cancel">Cancelar</button>
+          <button class="modal-btn save" id="new-bet-print-send">Enviar print</button>
+        </div>
       </div>
     </div>
   </div>
