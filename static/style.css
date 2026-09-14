@@ -117,7 +117,17 @@ body {
   font-size: 14px;
   color: #cfd3dd;
   cursor: pointer;
+  display: flex;
+  align-items: center;
 }
+.side-icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+.side-icon svg { width: 100%; height: 100%; }
 .side-item.active { color: white; background: rgba(255,255,255,0.06); }
 .side-item:hover { color: white; }
 
@@ -134,6 +144,9 @@ body {
   width: 300px;
 }
 .bets-table th:nth-child(7), .bets-table td:nth-child(7) {
+  text-align: center;
+}
+.bets-table th:nth-child(8), .bets-table td:nth-child(8) {
   text-align: center;
 }
 .bets-table th {
@@ -173,18 +186,23 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 999px;
-  font-size: 14px;
-  font-weight: 700;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 15px;
+  font-weight: 900;
+  color: white;
 }
-.result-tag.green { background: var(--green-bg); color: var(--green); }
-.result-tag.red { background: var(--red-bg); color: var(--red); }
-.result-tag.void { background: #eef1f6; color: var(--muted); }
-.result-tag.pending { background: #fff6e0; color: #a67c00; }
+.result-tag.green { background: var(--green); }
+.result-tag.red { background: var(--red); }
+.result-tag.void { background: var(--muted); }
+.result-tag.pending { background: #e0b33c; }
 .uni-cell.positive { color: var(--green); font-weight: 600; }
 .uni-cell.negative { color: var(--red); font-weight: 600; }
+
+/* classes genéricas de cor (positivo/negativo), usadas em vários lugares */
+.positive { color: var(--green); }
+.negative { color: var(--red); }
 
 /* botões de resolver (Green/Red/Void), centralizados na coluna Resultado */
 .resolve-actions { display: flex; gap: 6px; justify-content: center; align-items: center; }
@@ -468,7 +486,20 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
 .chart-card { padding: 20px 22px; }
 .card-head-block h2 { margin: 0; font-size: 16px; }
 .chart-sub { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); }
-.chart-summary { margin: 6px 0 14px; font-size: 12.5px; color: var(--text); }
+.chart-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--text);
+  margin: 8px 0 14px;
+}
+.chart-summary-row { display: flex; align-items: center; gap: 7px; }
+.chart-summary-row svg {
+  width: 14px; height: 14px;
+  flex-shrink: 0;
+  color: var(--muted);
+}
 .chart-summary b { font-weight: 700; }
 
 .side-card h2 { margin: 0 0 4px; font-size: 16px; }
