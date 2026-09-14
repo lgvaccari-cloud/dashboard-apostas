@@ -16,6 +16,9 @@ let ACTIVE_MES = null;
 let ONLY_PENDING = false;
 let ONLY_TODAY = false;
 let ONLY_YESTERDAY = false;
+let ONLY_FUTURE = false;
+let RANK_ONLY_TODAY = false;
+let RANK_ONLY_YESTERDAY = false;
 let AUTO_MES_APPLIED = false;
 let chartInstance = null;
 let CURRENT_VIEW = "geral";
@@ -318,18 +321,45 @@ document.getElementById("clear-pending-filter").addEventListener("click", () => 
 
 document.getElementById("filter-today").addEventListener("click", () => {
   ONLY_TODAY = !ONLY_TODAY;
-  if (ONLY_TODAY) ONLY_YESTERDAY = false;
+  if (ONLY_TODAY) { ONLY_YESTERDAY = false; ONLY_FUTURE = false; }
   document.getElementById("filter-today").classList.toggle("active", ONLY_TODAY);
   document.getElementById("filter-yesterday").classList.remove("active");
+  document.getElementById("filter-future").classList.remove("active");
   renderHistorico();
 });
 
 document.getElementById("filter-yesterday").addEventListener("click", () => {
   ONLY_YESTERDAY = !ONLY_YESTERDAY;
-  if (ONLY_YESTERDAY) ONLY_TODAY = false;
+  if (ONLY_YESTERDAY) { ONLY_TODAY = false; ONLY_FUTURE = false; }
   document.getElementById("filter-yesterday").classList.toggle("active", ONLY_YESTERDAY);
   document.getElementById("filter-today").classList.remove("active");
+  document.getElementById("filter-future").classList.remove("active");
   renderHistorico();
+});
+
+document.getElementById("filter-future").addEventListener("click", () => {
+  ONLY_FUTURE = !ONLY_FUTURE;
+  if (ONLY_FUTURE) { ONLY_TODAY = false; ONLY_YESTERDAY = false; }
+  document.getElementById("filter-future").classList.toggle("active", ONLY_FUTURE);
+  document.getElementById("filter-today").classList.remove("active");
+  document.getElementById("filter-yesterday").classList.remove("active");
+  renderHistorico();
+});
+
+document.getElementById("rank-filter-today").addEventListener("click", () => {
+  RANK_ONLY_TODAY = !RANK_ONLY_TODAY;
+  if (RANK_ONLY_TODAY) RANK_ONLY_YESTERDAY = false;
+  document.getElementById("rank-filter-today").classList.toggle("active", RANK_ONLY_TODAY);
+  document.getElementById("rank-filter-yesterday").classList.remove("active");
+  renderRanking();
+});
+
+document.getElementById("rank-filter-yesterday").addEventListener("click", () => {
+  RANK_ONLY_YESTERDAY = !RANK_ONLY_YESTERDAY;
+  if (RANK_ONLY_YESTERDAY) RANK_ONLY_TODAY = false;
+  document.getElementById("rank-filter-yesterday").classList.toggle("active", RANK_ONLY_YESTERDAY);
+  document.getElementById("rank-filter-today").classList.remove("active");
+  renderRanking();
 });
 
 const SORT_STATE = {
@@ -566,6 +596,7 @@ function historicoBets() {
   if (ONLY_PENDING) result = result.filter(b => !isResolved(b));
   if (ONLY_TODAY) result = result.filter(b => b.data_iso === todayISO());
   if (ONLY_YESTERDAY) result = result.filter(b => b.data_iso === yesterdayISO());
+  if (ONLY_FUTURE) result = result.filter(b => !isResolved(b) && b.data_iso && b.data_iso > todayISO());
   return result;
 }
 
@@ -645,7 +676,9 @@ function renderRanking() {
   const tbody = document.getElementById("ranking-table-body");
   if (!tbody) return;
 
-  const bets = ACTIVE_MES ? ALL_BETS.filter(b => b.mes === ACTIVE_MES) : ALL_BETS;
+  let bets = ACTIVE_MES ? ALL_BETS.filter(b => b.mes === ACTIVE_MES) : ALL_BETS;
+  if (RANK_ONLY_TODAY) bets = bets.filter(b => b.data_iso === todayISO());
+  if (RANK_ONLY_YESTERDAY) bets = bets.filter(b => b.data_iso === yesterdayISO());
   const porTipster = {};
 
   bets.forEach(b => {
