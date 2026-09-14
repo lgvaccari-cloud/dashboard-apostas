@@ -1,6 +1,7 @@
 import os
 from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+import requests
 
 from sheets import fetch_bets, fetch_bets_for_mes, update_bet, add_bet, fetch_bancas_for_mes, update_banca
 
@@ -8,6 +9,12 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "troque-essa-chave-em-producao")
 
 DASHBOARD_PASSWORD = os.environ.get("DASHBOARD_PASSWORD", "")
+
+# URL pública do bot do Telegram (agora rodando como Web Service) e a chave
+# secreta compartilhada com ele — usados pra mandar prints de "+ Nova aposta"
+# direto pro mesmo processamento por IA que o bot já usa.
+BOT_API_URL = os.environ.get("BOT_API_URL", "").rstrip("/")
+BOT_API_KEY = os.environ.get("BOT_API_KEY", "")
 
 
 def login_required(f):
@@ -137,6 +144,55 @@ def api_update_banca():
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/add_bet_from_image", methods=["POST"])
+@login_required
+def api_add_bet_from_image():
+    """Manda um print de aposta pro bot processar (mesma IA que o bot do
+    Telegram usa) e escrever direto na planilha."""
+    if not BOT_API_URL or not BOT_API_KEY:
+        return jsonify({"status": "error", "message": "O dashboard ainda não está configurado pra falar com o bot (faltam BOT_API_URL/BOT_API_KEY)."}), 500
+
+    if "image" not in request.files:
+        return jsonify({"status": "error", "message": "Nenhuma imagem enviada."}), 400
+
+    image_file = request.files["image"]
+    mes = request.form.get("mes", "")
+    caption = request.form.get("caption", "")
+
+    try:
+        resp = requests.post(
+            f"{BOT_API_URL}/internal/process_screenshot",
+            headers={"X-Internal-Key": BOT_API_KEY},
+            files={"image": (image_file.filename, image_file.stream, image_file.mimetype)},
+            data={"mes": mes, "caption": caption},
+            timeout=90,
+        )
+        return jsonify(resp.json()), resp.status_code
+    except requests.RequestException as e:
+        return jsonify({"status": "error", "message": f"Não consegui falar com o bot: {e}"}), 502
+
+
+@app.route("/api/resolve_casa_image", methods=["POST"])
+@login_required
+def api_resolve_casa_image():
+    """Confirma qual casa é (quando o bot pergunta, por causa de layout
+    ambíguo entre duas casas) e finaliza o registro da aposta."""
+    if not BOT_API_URL or not BOT_API_KEY:
+        return jsonify({"status": "error", "message": "O dashboard ainda não está configurado pra falar com o bot."}), 500
+
+    payload = request.get_json(force=True)
+    try:
+        resp = requests.post(
+            f"{BOT_API_URL}/internal/resolve_casa",
+            headers={"X-Internal-Key": BOT_API_KEY},
+            json=payload,
+            timeout=30,
+        )
+        return jsonify(resp.json()), resp.status_code
+    except requests.RequestException as e:
+        return jsonify({"status": "error", "message": f"Não consegui falar com o bot: {e}"}), 502
 
 
 if __name__ == "__main__":
