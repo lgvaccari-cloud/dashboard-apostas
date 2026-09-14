@@ -55,7 +55,7 @@ def api_bets():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-@app.route("/api/bets_mes/<mes>")
+@app.route("/api/bets_mes/<path:mes>")
 @login_required
 def api_bets_mes(mes):
     """Relê só a aba de um mês — usado pra atualizar rápido depois de marcar
@@ -113,7 +113,7 @@ def api_add_bet():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-@app.route("/api/bancas/<mes>")
+@app.route("/api/bancas/<path:mes>")
 @login_required
 def api_bancas(mes):
     """Banca somada por casa de apostas (só contas Ativas), dentro do mês indicado."""
