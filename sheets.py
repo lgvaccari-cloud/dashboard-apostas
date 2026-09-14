@@ -1,5 +1,6 @@
 import os
 import json
+import time
 from datetime import datetime
 import gspread
 from google.oauth2.service_account import Credentials
@@ -8,6 +9,11 @@ from google.oauth2.service_account import Credentials
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
 ]
+
+# cache curto em memória: evita reler a planilha inteira a cada carregamento
+# de página — só busca de novo depois de expirar (ou depois de uma edição)
+_CACHE_TTL_SEGUNDOS = 20
+_cache = {"bets": None, "ts": 0}
 
 # Nomes das colunas na ordem exata da planilha (A -> N)
 COLUMNS = [
@@ -131,23 +137,40 @@ def _parse_bets_from_rows(rows, mes_label):
     return bets
 
 
-def fetch_bets():
+def fetch_bets(force=False):
     """Lê TODAS as abas da planilha (uma por mês) e devolve uma lista única
     de apostas, cada uma marcada com o mês (nome da aba) de origem.
+
+    Usa um cache curto em memória (`_CACHE_TTL_SEGUNDOS`) pra não reler a
+    planilha inteira a cada carregamento de página. Passe force=True pra
+    ignorar o cache e buscar de verdade (usado pelo botão de atualizar).
+
+    Busca os dados de todas as abas numa ÚNICA chamada à API (batch get), em
+    vez de uma chamada por aba — isso é o que faz o carregamento ser rápido
+    mesmo com vários meses na planilha.
 
     Abas que não tiverem a tabela de apostas (sem o cabeçalho 'Tipster') são
     ignoradas silenciosamente — assim uma aba extra/diferente na planilha não
     quebra a leitura.
     """
+    agora = time.time()
+    if not force and _cache["bets"] is not None and (agora - _cache["ts"]) < _CACHE_TTL_SEGUNDOS:
+        return _cache["bets"]
+
     client = _get_client()
     sheet_id = os.environ["SHEET_ID"]
 
     sh = client.open_by_key(sheet_id)
+    titles = [ws.title for ws in sh.worksheets()]
+
+    ranges = [f"'{title}'" for title in titles]
+    batch = sh.values_batch_get(ranges)
+    value_ranges = batch.get("valueRanges", [])
 
     all_bets = []
-    for ws in sh.worksheets():
-        rows = ws.get_all_values()
-        all_bets.extend(_parse_bets_from_rows(rows, ws.title))
+    for title, value_range in zip(titles, value_ranges):
+        rows = value_range.get("values", [])
+        all_bets.extend(_parse_bets_from_rows(rows, title))
 
     if not all_bets:
         raise RuntimeError(
@@ -155,7 +178,24 @@ def fetch_bets():
             "confira se o SHEET_ID está certo e se as abas têm a mesma estrutura de colunas."
         )
 
+    _cache["bets"] = all_bets
+    _cache["ts"] = agora
     return all_bets
+
+
+def fetch_bets_for_mes(mes):
+    """Lê só a aba (mês) indicada e devolve as apostas dela.
+
+    Bem mais rápido que fetch_bets() porque não varre a planilha inteira —
+    usado depois de marcar resultado ou editar uma aposta, quando só
+    precisamos re-sincronizar aquele mês específico.
+    """
+    client = _get_client()
+    sheet_id = os.environ["SHEET_ID"]
+    sh = client.open_by_key(sheet_id)
+    ws = sh.worksheet(mes)
+    rows = ws.get_all_values()
+    return _parse_bets_from_rows(rows, mes)
 
 
 def update_bet(mes, row, updates):
@@ -186,3 +226,48 @@ def update_bet(mes, row, updates):
         col_num = data_col + col_idx + 1  # 1-based
         cell_a1 = gspread.utils.rowcol_to_a1(row, col_num)
         ws.update(range_name=cell_a1, values=[[value]], value_input_option="USER_ENTERED")
+
+    _cache["bets"] = None  # invalida o cache — a próxima leitura completa busca de novo
+
+
+def add_bet(mes, fields):
+    """Adiciona uma aposta nova na aba `mes`, na primeira linha vazia depois
+    da última aposta existente.
+
+    Só preenche os campos até Odd (Data, Casa, Tipster, Aposta, Tipo,
+    Mercado, Resultado, Stake, Odd) — as colunas de fórmula (Aposta R$,
+    Lucro, Uni, Bank, Cresc%) devem já estar prontas na planilha (copiadas
+    pra baixo com antecedência), do mesmo jeito que o bot do Telegram
+    também só preenche até a Odd.
+
+    `fields` é um dict com as chaves: data, casa, tipster, aposta, tipo,
+    mercado, resultado, stake, odd.
+    """
+    client = _get_client()
+    sheet_id = os.environ["SHEET_ID"]
+    sh = client.open_by_key(sheet_id)
+    ws = sh.worksheet(mes)
+
+    rows = ws.get_all_values()
+    data_start_row, data_col = _find_table_start(rows)
+    if data_col is None:
+        raise RuntimeError(f"Não encontrei a tabela de apostas na aba '{mes}'.")
+
+    # acha a primeira linha vazia (sem Data) a partir do início da tabela
+    next_row = None
+    for i, row in enumerate(rows[data_start_row:]):
+        data_val = row[data_col].strip() if len(row) > data_col else ""
+        if not data_val:
+            next_row = data_start_row + i + 1
+            break
+    if next_row is None:
+        next_row = data_start_row + len(rows[data_start_row:]) + 1
+
+    order = ["data", "casa", "tipster", "aposta", "tipo", "mercado", "resultado", "stake", "odd"]
+    values = [[fields.get(f, "") for f in order]]
+    start_a1 = gspread.utils.rowcol_to_a1(next_row, data_col + 1)
+    end_a1 = gspread.utils.rowcol_to_a1(next_row, data_col + len(order))
+    ws.update(range_name=f"{start_a1}:{end_a1}", values=values, value_input_option="USER_ENTERED")
+
+    _cache["bets"] = None
+    return next_row
