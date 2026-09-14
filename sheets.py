@@ -93,6 +93,21 @@ def _find_table_start(rows):
     return None, None
 
 
+def _find_label_value(rows, label):
+    """Procura uma célula com o texto exato de `label` (ex: "ROI %") em
+    qualquer lugar da aba, e devolve o próximo valor não vazio na mesma
+    linha (o bloco de resumo tem o rótulo numa coluna e o valor logo depois,
+    às vezes numa célula mesclada). Devolve None se não achar."""
+    label_lower = label.strip().lower()
+    for row in rows:
+        for col_idx, cell in enumerate(row):
+            if cell.strip().lower() == label_lower:
+                for next_cell in row[col_idx + 1:]:
+                    if next_cell.strip():
+                        return next_cell.strip()
+    return None
+
+
 def _parse_bets_from_rows(rows, mes_label):
     """Extrai as apostas de uma aba já lida (rows), marcando cada aposta com
     o nome da aba de origem (mes_label) e a linha absoluta na planilha (pra
@@ -101,6 +116,8 @@ def _parse_bets_from_rows(rows, mes_label):
     data_start_row, data_col = _find_table_start(rows)
     if data_col is None:
         return []
+
+    roi_pct = _find_label_value(rows, "ROI %") or ""
 
     bets = []
     for i, row in enumerate(rows[data_start_row:]):
@@ -117,6 +134,7 @@ def _parse_bets_from_rows(rows, mes_label):
 
         bet = {
             "mes": mes_label,
+            "mes_roi_pct": roi_pct,
             "row": sheet_row,
             "data": record["data"].strip(),
             "data_iso": parsed_date.isoformat() if parsed_date else None,
