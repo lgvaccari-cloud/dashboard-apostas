@@ -2,7 +2,7 @@ import os
 from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 
-from sheets import fetch_bets, fetch_bets_for_mes, update_bet, add_bet, fetch_bancas_for_mes
+from sheets import fetch_bets, fetch_bets_for_mes, update_bet, add_bet, fetch_bancas_for_mes, update_banca
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "troque-essa-chave-em-producao")
@@ -118,8 +118,23 @@ def api_add_bet():
 def api_bancas(mes):
     """Banca somada por casa de apostas (só contas Ativas), dentro do mês indicado."""
     try:
-        bancas = fetch_bancas_for_mes(mes)
-        return jsonify({"ok": True, "bancas": bancas})
+        dados = fetch_bancas_for_mes(mes)
+        return jsonify({"ok": True, "resumo": dados["resumo"], "contas": dados["contas"]})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/update_banca", methods=["POST"])
+@login_required
+def api_update_banca():
+    """Edita o valor de 'Total Banca' de uma conta específica."""
+    try:
+        payload = request.get_json(force=True)
+        mes = payload["mes"]
+        row = int(payload["row"])
+        valor = payload["valor"]
+        update_banca(mes, row, valor)
+        return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 

@@ -202,31 +202,36 @@ def fetch_bets(force=False):
 
 
 def _find_bancas_table(rows):
-    """Acha a linha de cabeçalho e as colunas Casa/Status/Total Banca da
+    """Acha a linha de cabeçalho e as colunas Casa/Nome/Status/Total Banca da
     tabela de contas por casa de apostas (uma tabela separada da de apostas,
     em outra área da mesma aba).
 
-    Retorna (linha_de_dados, col_casa, col_status, col_total_banca), ou
-    (None, None, None, None) se não achar.
+    Retorna (linha_de_dados, dict_de_colunas), ou (None, None) se não achar.
     """
     for row_idx, row in enumerate(rows):
         lower = [c.strip().lower() for c in row]
         if "casa" in lower and "status" in lower and "total banca" in lower:
-            return (
-                row_idx + 1,
-                lower.index("casa"),
-                lower.index("status"),
-                lower.index("total banca"),
-            )
-    return None, None, None, None
+            cols = {
+                "casa": lower.index("casa"),
+                "status": lower.index("status"),
+                "total_banca": lower.index("total banca"),
+            }
+            if "nome" in lower:
+                cols["nome"] = lower.index("nome")
+            return row_idx + 1, cols
+    return None, None
 
 
 def fetch_bancas_for_mes(mes):
-    """Lê a tabela de contas/bancas por casa de apostas dentro da aba `mes`,
-    soma o "Total Banca" das contas com Status "Ativa", agrupado por Casa.
+    """Lê a tabela de contas/bancas por casa de apostas dentro da aba `mes`.
 
-    Devolve uma lista de dicts [{"casa", "banca", "contas"}], ordenada da
-    maior banca pra menor. Devolve [] se não achar essa tabela na aba.
+    Devolve um dict com:
+      - "resumo": [{"casa", "banca", "contas"}] — soma do "Total Banca" das
+        contas com Status "Ativa", agrupado por Casa, da maior pra menor.
+      - "contas": [{"casa", "nome", "banca", "row"}] — cada conta ativa
+        individualmente, com o número da linha na planilha (pra editar).
+
+    Devolve {"resumo": [], "contas": []} se não achar essa tabela na aba.
     """
     client = _get_client()
     sheet_id = os.environ["SHEET_ID"]
@@ -234,30 +239,58 @@ def fetch_bancas_for_mes(mes):
     ws = sh.worksheet(mes)
     rows = ws.get_all_values()
 
-    data_start_row, col_casa, col_status, col_total_banca = _find_bancas_table(rows)
-    if col_casa is None:
-        return []
+    data_start_row, cols = _find_bancas_table(rows)
+    if cols is None:
+        return {"resumo": [], "contas": []}
 
-    max_col = max(col_casa, col_status, col_total_banca)
-    somas = {}
-    contas = {}
-    for row in rows[data_start_row:]:
+    col_casa = cols["casa"]
+    col_status = cols["status"]
+    col_banca = cols["total_banca"]
+    col_nome = cols.get("nome")
+    max_col = max(v for v in cols.values())
+
+    contas = []
+    for i, row in enumerate(rows[data_start_row:]):
         if len(row) <= max_col:
             continue
         casa = row[col_casa].strip()
         status = row[col_status].strip().lower()
         if not casa or status != "ativa":
             continue
-        valor = _to_float(row[col_total_banca])
-        somas[casa] = somas.get(casa, 0.0) + valor
-        contas[casa] = contas.get(casa, 0) + 1
+        valor = _to_float(row[col_banca])
+        nome = row[col_nome].strip() if col_nome is not None and len(row) > col_nome else ""
+        sheet_row = data_start_row + i + 1
+        contas.append({"casa": casa, "nome": nome, "banca": valor, "row": sheet_row})
 
-    resultado = [
-        {"casa": casa, "banca": somas[casa], "contas": contas[casa]}
-        for casa in somas
-    ]
-    resultado.sort(key=lambda x: x["banca"], reverse=True)
-    return resultado
+    somas = {}
+    qtd = {}
+    for c in contas:
+        somas[c["casa"]] = somas.get(c["casa"], 0.0) + c["banca"]
+        qtd[c["casa"]] = qtd.get(c["casa"], 0) + 1
+
+    resumo = [{"casa": casa, "banca": somas[casa], "contas": qtd[casa]} for casa in somas]
+    resumo.sort(key=lambda x: x["banca"], reverse=True)
+
+    return {"resumo": resumo, "contas": contas}
+
+
+def update_banca(mes, row, valor):
+    """Atualiza o valor de "Total Banca" de uma conta específica (linha) na
+    tabela de contas/bancas dessa aba."""
+    client = _get_client()
+    sheet_id = os.environ["SHEET_ID"]
+    sh = client.open_by_key(sheet_id)
+    ws = sh.worksheet(mes)
+    rows = ws.get_all_values()
+
+    _, cols = _find_bancas_table(rows)
+    if cols is None:
+        raise RuntimeError(f"Não encontrei a tabela de bancas na aba '{mes}'.")
+
+    col_num = cols["total_banca"] + 1  # 1-based
+    cell_a1 = gspread.utils.rowcol_to_a1(row, col_num)
+    ws.update(range_name=cell_a1, values=[[valor]], value_input_option="USER_ENTERED")
+    _cache["bets"] = None
 
 
 def fetch_bets_for_mes(mes):
