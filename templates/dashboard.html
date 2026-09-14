@@ -15,9 +15,9 @@
   <div class="layout">
     <aside class="sidebar">
       <div class="brand">
-        <span class="brand-mark">B</span>
+        <span class="brand-mark">LV</span>
         <div>
-          <div class="brand-name">Painel</div>
+          <div class="brand-name">Luís Vaccari</div>
           <div class="brand-sub">Gestão de banca</div>
         </div>
       </div>
@@ -33,15 +33,16 @@
         <div>
           <div class="eyebrow" id="today-label"></div>
           <h1 id="greeting">Carregando...</h1>
-          <p class="subtitle" id="subtitle">Valores em unidades.</p>
+          <p class="subtitle" id="subtitle">—</p>
         </div>
         <div class="topbar-actions">
           <div class="currency-toggle">
             <button class="toggle-btn active" id="toggle-uni">Unidades</button>
             <button class="toggle-btn" id="toggle-real">R$</button>
           </div>
-          <button class="dark-toggle-btn" id="toggle-dark" title="Modo noturno">🌙</button>
+          <button class="dark-toggle-btn" id="toggle-dark" title="Modo noturno"></button>
           <button class="refresh-btn" id="refresh-btn" title="Atualizar">&#8635;</button>
+          <button class="new-bet-btn" id="new-bet-btn">+ Nova aposta</button>
         </div>
       </header>
 
@@ -69,7 +70,7 @@
       <section class="cards-row">
         <div class="card card-highlight">
           <div class="card-head">
-            <span class="card-label">Resultado líquido</span>
+            <span class="card-label">Total no mês</span>
           </div>
           <div class="card-value" id="metric-liquido">—</div>
           <div class="card-foot" id="metric-liquido-foot">—</div>
@@ -150,12 +151,10 @@
           <table class="bets-table">
             <thead>
               <tr>
-                <th>Mês</th>
                 <th>Data</th>
                 <th>Casa</th>
                 <th>Tipster</th>
                 <th>Aposta</th>
-                <th>Mercado</th>
                 <th>Odd</th>
                 <th>Stake</th>
                 <th>Resultado</th>
@@ -168,6 +167,53 @@
         </div>
       </div>
     </main>
+  </div>
+
+  <div class="modal-overlay" id="new-bet-overlay" style="display:none">
+    <div class="modal-card">
+      <h2>Nova aposta</h2>
+      <div class="modal-grid">
+        <label>Mês
+          <select id="new-bet-mes"></select>
+        </label>
+        <label>Data
+          <input type="text" id="new-bet-data" placeholder="dd/mm/aaaa">
+        </label>
+        <label>Casa
+          <input type="text" id="new-bet-casa" placeholder="Bet365">
+        </label>
+        <label>Tipster
+          <input type="text" id="new-bet-tipster" placeholder="Nome do tipster">
+        </label>
+        <label class="modal-span-2">Aposta
+          <input type="text" id="new-bet-aposta" placeholder="Descrição da aposta">
+        </label>
+        <label>Mercado
+          <input type="text" id="new-bet-mercado" placeholder="Under, HC, ML...">
+        </label>
+        <label>Tipo
+          <input type="text" id="new-bet-tipo" placeholder="Pré, Live...">
+        </label>
+        <label>Odd
+          <input type="text" id="new-bet-odd" placeholder="1,85">
+        </label>
+        <label>Stake (unidades)
+          <input type="text" id="new-bet-stake" placeholder="0,75">
+        </label>
+        <label>Resultado
+          <select id="new-bet-resultado">
+            <option value="">Pendente</option>
+            <option value="Green">Green</option>
+            <option value="Red">Red</option>
+            <option value="Void">Void</option>
+          </select>
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn cancel" id="new-bet-cancel">Cancelar</button>
+        <button class="modal-btn save" id="new-bet-save">Salvar aposta</button>
+      </div>
+    </div>
   </div>
 
   <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
