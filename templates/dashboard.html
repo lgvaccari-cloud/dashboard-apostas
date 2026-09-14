@@ -155,6 +155,7 @@
         <div class="filters-bar">
           <span class="filters-label">Filtro rápido</span>
           <button class="chip" id="filter-today">Hoje</button>
+          <button class="chip" id="filter-yesterday">Ontem</button>
         </div>
         <div class="pending-banner" id="pending-banner">
           Mostrando só as apostas pendentes.
@@ -164,14 +165,14 @@
           <table class="bets-table">
             <thead>
               <tr>
-                <th>Data</th>
-                <th>Casa</th>
-                <th>Tipster</th>
-                <th>Aposta</th>
-                <th>Odd</th>
-                <th>Stake</th>
-                <th>Resultado</th>
-                <th>P/L</th>
+                <th id="th-hist-data">Data</th>
+                <th id="th-hist-casa">Casa</th>
+                <th id="th-hist-tipster">Tipster</th>
+                <th id="th-hist-aposta">Aposta</th>
+                <th id="th-hist-odd">Odd</th>
+                <th id="th-hist-stake">Stake</th>
+                <th id="th-hist-resultado">Resultado</th>
+                <th id="th-hist-uni">P/L</th>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -185,11 +186,11 @@
           <table class="bets-table">
             <thead>
               <tr>
-                <th>Tipster</th>
-                <th>Apostas</th>
-                <th>Taxa de acerto</th>
-                <th>ROI</th>
-                <th>Resultado</th>
+                <th id="th-rank-tipster">Tipster</th>
+                <th id="th-rank-apostas">Apostas</th>
+                <th id="th-rank-taxa">Taxa de acerto</th>
+                <th id="th-rank-roi">ROI</th>
+                <th id="th-rank-resultado">Resultado</th>
               </tr>
             </thead>
             <tbody id="ranking-table-body"></tbody>
@@ -198,13 +199,20 @@
       </div>
 
       <div id="view-bancas" style="display:none">
+        <section class="cards-row" style="grid-template-columns: 1fr;">
+          <div class="card card-highlight">
+            <div class="card-head"><span class="card-label">Banca total (todas as casas)</span></div>
+            <div class="card-value" id="banca-total">—</div>
+            <div class="card-foot" id="banca-total-foot">—</div>
+          </div>
+        </section>
         <div class="card table-card">
           <table class="bets-table">
             <thead>
               <tr>
-                <th>Casa</th>
-                <th>Contas ativas</th>
-                <th>Banca somada</th>
+                <th id="th-banca-casa">Casa</th>
+                <th id="th-banca-contas">Contas ativas</th>
+                <th id="th-banca-total">Banca somada</th>
               </tr>
             </thead>
             <tbody id="bancas-table-body"></tbody>
