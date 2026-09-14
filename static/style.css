@@ -150,19 +150,10 @@ body {
   font-size: 13px;
   table-layout: fixed;
 }
-#view-historico .bets-table { min-width: 760px; }
-#view-ranking .bets-table { min-width: 520px; }
-#view-bancas .bets-table { min-width: 420px; }
-.bets-table th, .bets-table td { white-space: nowrap; }
-.bets-table th:nth-child(4), .bets-table td:nth-child(4) {
-  white-space: normal;
-  width: 300px;
-}
-.bets-table th:nth-child(7), .bets-table td:nth-child(7) {
-  text-align: center;
-}
-.bets-table th:nth-child(8), .bets-table td:nth-child(8) {
-  text-align: center;
+.bets-table th, .bets-table td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .bets-table th {
   text-align: left;
@@ -182,6 +173,35 @@ body {
 .bets-table tr:last-child td { border-bottom: none; }
 .bets-table tbody tr:nth-child(even) { background: #f7f9fc; }
 .bets-table tbody tr:hover { background: #eef4e6; }
+
+/* Histórico: Data, Casa, Tipster, Aposta, Odd, Stake, Resultado, P/L, Ações */
+#view-historico .bets-table { min-width: 900px; }
+#view-historico .bets-table th:nth-child(1), #view-historico .bets-table td:nth-child(1) { width: 92px; }
+#view-historico .bets-table th:nth-child(2), #view-historico .bets-table td:nth-child(2) { width: 72px; }
+#view-historico .bets-table th:nth-child(3), #view-historico .bets-table td:nth-child(3) { width: 96px; }
+#view-historico .bets-table th:nth-child(4), #view-historico .bets-table td:nth-child(4) {
+  width: 300px;
+  white-space: normal;
+}
+#view-historico .bets-table th:nth-child(5), #view-historico .bets-table td:nth-child(5) { width: 56px; }
+#view-historico .bets-table th:nth-child(6), #view-historico .bets-table td:nth-child(6) { width: 68px; }
+#view-historico .bets-table th:nth-child(7), #view-historico .bets-table td:nth-child(7) { width: 84px; text-align: center; }
+#view-historico .bets-table th:nth-child(8), #view-historico .bets-table td:nth-child(8) { width: 78px; text-align: center; }
+#view-historico .bets-table th:nth-child(9), #view-historico .bets-table td:nth-child(9) { width: 56px; }
+
+/* Ranking: Tipster, Apostas, Taxa de acerto, ROI, Resultado */
+#view-ranking .bets-table { min-width: 540px; }
+#view-ranking .bets-table th:nth-child(1), #view-ranking .bets-table td:nth-child(1) { width: 130px; }
+#view-ranking .bets-table th:nth-child(2), #view-ranking .bets-table td:nth-child(2) { width: 80px; }
+#view-ranking .bets-table th:nth-child(3), #view-ranking .bets-table td:nth-child(3) { width: 120px; }
+#view-ranking .bets-table th:nth-child(4), #view-ranking .bets-table td:nth-child(4) { width: 90px; }
+#view-ranking .bets-table th:nth-child(5), #view-ranking .bets-table td:nth-child(5) { width: 120px; }
+
+/* Bancas: Casa, Contas ativas, Banca somada */
+#view-bancas .bets-table { min-width: 440px; }
+#view-bancas .bets-table th:nth-child(1), #view-bancas .bets-table td:nth-child(1) { width: 140px; }
+#view-bancas .bets-table th:nth-child(2), #view-bancas .bets-table td:nth-child(2) { width: 150px; }
+#view-bancas .bets-table th:nth-child(3), #view-bancas .bets-table td:nth-child(3) { width: 150px; }
 
 .casa-cell { display: inline-flex; align-items: center; gap: 8px; }
 .casa-badge {
