@@ -22,8 +22,8 @@
         </div>
       </div>
       <nav class="side-nav">
-        <div class="side-item active" id="nav-geral">Visão geral</div>
-        <div class="side-item" id="nav-historico">Histórico</div>
+        <div class="side-item active" id="nav-geral"><span class="side-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Visão geral</div>
+        <div class="side-item" id="nav-historico"><span class="side-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 9h18M3 14h18M9 4v16M15 4v16"/></svg></span>Histórico</div>
       </nav>
       <a class="logout" href="{{ url_for('logout') }}">Sair</a>
     </aside>
@@ -105,7 +105,7 @@
           <div class="card-head-block">
             <h2 id="chart-title">Resultado acumulado</h2>
             <p class="chart-sub" id="chart-sub">Linha acumulada, barras com o resultado de cada dia</p>
-            <p class="chart-summary" id="chart-summary">—</p>
+            <div class="chart-summary" id="chart-summary">—</div>
           </div>
           <canvas id="results-chart" height="110"></canvas>
         </div>
@@ -133,10 +133,16 @@
             <span class="side-note">Todas as apostas filtradas</span>
           </div>
 
-          <div class="side-metric">
+          <div class="side-metric" id="melhor-tipster-block">
             <span class="side-label">Melhor tipster</span>
             <div class="side-big" id="metric-melhor-tipster">—</div>
             <span class="side-note" id="metric-melhor-tipster-foot">—</span>
+          </div>
+
+          <div class="side-metric" id="pior-tipster-block">
+            <span class="side-label">Pior tipster</span>
+            <div class="side-big" id="metric-pior-tipster">—</div>
+            <span class="side-note" id="metric-pior-tipster-foot">—</span>
           </div>
         </div>
       </section>
@@ -158,7 +164,7 @@
                 <th>Odd</th>
                 <th>Stake</th>
                 <th>Resultado</th>
-                <th>Uni</th>
+                <th>P/L</th>
                 <th>Ações</th>
               </tr>
             </thead>
