@@ -297,10 +297,14 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
 .logout {
   margin-top: auto;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 14px;
   text-decoration: none;
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 8px;
 }
-.logout:hover { color: white; }
+.logout:hover { color: white; background: rgba(255,255,255,0.06); }
 
 .content {
   flex: 1;
