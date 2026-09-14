@@ -2,7 +2,7 @@ import os
 from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 
-from sheets import fetch_bets, update_bet
+from sheets import fetch_bets, fetch_bets_for_mes, update_bet, add_bet
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "troque-essa-chave-em-producao")
@@ -48,7 +48,20 @@ def index():
 @login_required
 def api_bets():
     try:
-        bets = fetch_bets()
+        force = request.args.get("force") == "1"
+        bets = fetch_bets(force=force)
+        return jsonify({"ok": True, "bets": bets})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/bets_mes/<mes>")
+@login_required
+def api_bets_mes(mes):
+    """Relê só a aba de um mês — usado pra atualizar rápido depois de marcar
+    resultado ou editar uma aposta, sem reler a planilha inteira."""
+    try:
+        bets = fetch_bets_for_mes(mes)
         return jsonify({"ok": True, "bets": bets})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
@@ -82,6 +95,20 @@ def api_update_bet():
         updates = payload.get("updates", {})
         update_bet(mes, row, updates)
         return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/add_bet", methods=["POST"])
+@login_required
+def api_add_bet():
+    """Cria uma aposta nova na aba (mês) indicada."""
+    try:
+        payload = request.get_json(force=True)
+        mes = payload["mes"]
+        fields = payload.get("fields", {})
+        row = add_bet(mes, fields)
+        return jsonify({"ok": True, "row": row})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
