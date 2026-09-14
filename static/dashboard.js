@@ -206,7 +206,17 @@ function renderChips() {
     container.appendChild(chip);
   });
   document.getElementById("clear-filters").style.display = ACTIVE_TIPSTER ? "inline" : "none";
+
+  const select = document.getElementById("tipster-select");
+  select.innerHTML = `<option value="">Todos os tipsters</option>` +
+    tipsters.map(t => `<option value="${esc(t)}" ${ACTIVE_TIPSTER === t ? "selected" : ""}>${esc(t)}</option>`).join("");
 }
+
+document.getElementById("tipster-select").addEventListener("change", (e) => {
+  ACTIVE_TIPSTER = e.target.value || null;
+  renderChips();
+  renderAll();
+});
 
 document.getElementById("clear-filters").addEventListener("click", () => {
   ACTIVE_TIPSTER = null;
@@ -234,7 +244,19 @@ function renderMesChips() {
     container.appendChild(chip);
   });
   document.getElementById("clear-mes").style.display = ACTIVE_MES ? "inline" : "none";
+
+  const select = document.getElementById("mes-select");
+  select.innerHTML = `<option value="">Todos os meses</option>` +
+    meses.map(m => `<option value="${esc(m)}" ${ACTIVE_MES === m ? "selected" : ""}>${esc(formatMesLabel(m))}</option>`).join("");
 }
+
+document.getElementById("mes-select").addEventListener("change", (e) => {
+  ACTIVE_MES = e.target.value || null;
+  ACTIVE_TIPSTER = null;
+  renderMesChips();
+  renderChips();
+  renderAll();
+});
 
 document.getElementById("clear-mes").addEventListener("click", () => {
   ACTIVE_MES = null;

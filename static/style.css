@@ -149,6 +149,9 @@ body {
   font-size: 13px;
   table-layout: fixed;
 }
+#view-historico .bets-table { min-width: 760px; }
+#view-ranking .bets-table { min-width: 520px; }
+#view-bancas .bets-table { min-width: 420px; }
 .bets-table th, .bets-table td { white-space: nowrap; }
 .bets-table th:nth-child(4), .bets-table td:nth-child(4) {
   white-space: normal;
@@ -420,6 +423,18 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   font-family: inherit;
 }
 
+.mobile-filter-select {
+  display: none;
+  flex: 1;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+}
+
 /* barra "Filtros ativos" com os chips de filtro selecionado + limpar tudo */
 .active-filters-bar {
   display: none;
@@ -652,6 +667,8 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   .content { padding: 16px; }
   .modal-grid { grid-template-columns: 1fr; }
   .modal-span-2 { grid-column: span 1; }
+  #mes-chips, #tipster-chips { display: none; }
+  .mobile-filter-select { display: block; }
 }
 
 @media (max-width: 480px) {
