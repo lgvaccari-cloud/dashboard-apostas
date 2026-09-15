@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=Work+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Sora:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <script src="{{ url_for('static', filename='chart.umd.min.js') }}"></script>
   <script>window.STAKE_BASE = {{ stake_base }};</script>
@@ -44,8 +44,8 @@
         </div>
         <div class="topbar-actions">
           <div class="currency-toggle">
-            <button class="toggle-btn active" id="toggle-uni">Unidades</button>
-            <button class="toggle-btn" id="toggle-real">R$</button>
+            <button class="toggle-btn" id="toggle-uni">Unidades</button>
+            <button class="toggle-btn active" id="toggle-real">R$</button>
           </div>
           <button class="dark-toggle-btn" id="toggle-dark" title="Modo noturno"></button>
           <button class="refresh-btn" id="refresh-btn" title="Atualizar">&#8635;</button>
@@ -261,6 +261,12 @@
           <h2 class="config-section-title" style="margin-top:26px">Temas — escuros</h2>
           <div class="theme-grid" id="theme-grid-dark"></div>
         </div>
+
+        <div class="card" style="margin-top:16px">
+          <h2 class="config-section-title">Fonte</h2>
+          <p class="chart-sub">Escolha a fonte usada em todo o painel.</p>
+          <div class="theme-grid" id="font-grid"></div>
+        </div>
       </div>
     </main>
   </div>
@@ -334,6 +340,7 @@
             <input type="text" id="new-bet-print-caption" placeholder="Ex: Jarvis Pré">
           </label>
         </div>
+        <div class="print-loading-bar" id="print-loading-bar" style="display:none"><div class="print-loading-bar-fill"></div></div>
         <div id="new-bet-print-feedback"></div>
         <div class="modal-actions">
           <button class="modal-btn cancel" id="new-bet-print-cancel">Cancelar</button>
