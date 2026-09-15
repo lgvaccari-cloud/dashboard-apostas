@@ -52,6 +52,14 @@ function yesterdayISO() {
   return `${d.getFullYear()}-${mm}-${dd}`;
 }
 
+// mais recente primeiro; dentro do mesmo dia, a linha mais nova da planilha
+// (maior número de linha) aparece primeiro
+function compareRecentFirst(a, b) {
+  const porData = (b.data_iso || "").localeCompare(a.data_iso || "");
+  if (porData !== 0) return porData;
+  return (b.row || 0) - (a.row || 0);
+}
+
 function escJs(value) {
   return String(value ?? "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
@@ -551,12 +559,14 @@ function renderHistorico() {
   if (SORT_STATE.hist.key) {
     bets = applySort(bets, SORT_STATE.hist, (b, k) => b[k]);
   } else {
-    bets.sort((a, b) => (b.data_iso || "").localeCompare(a.data_iso || ""));
+    bets.sort(compareRecentFirst);
   }
 
   CURRENT_HISTORICO_BETS = bets;
 
   document.getElementById("pending-banner").style.display = ONLY_PENDING ? "flex" : "none";
+
+  renderBetsCards(bets);
 
   tbody.innerHTML = bets.map((b, idx) => {
     const uniClass = b.lucro_uni > 0 ? "positive" : b.lucro_uni < 0 ? "negative" : "";
@@ -619,6 +629,88 @@ function currentBets() {
   if (ACTIVE_TIPSTER) result = result.filter(b => b.tipster === ACTIVE_TIPSTER);
   if (ACTIVE_MES) result = result.filter(b => b.mes === ACTIVE_MES);
   return result;
+}
+
+// ---------- Visão em cards do Histórico ----------
+let HIST_VIEW_MODE = "cards";
+
+function setHistViewMode(mode) {
+  HIST_VIEW_MODE = mode;
+  document.getElementById("hist-view-cards-btn").classList.toggle("active", mode === "cards");
+  document.getElementById("hist-view-table-btn").classList.toggle("active", mode === "table");
+  document.getElementById("bets-cards-grid").style.display = mode === "cards" ? "grid" : "none";
+  document.getElementById("hist-table-wrap").style.display = mode === "table" ? "" : "none";
+}
+
+document.getElementById("hist-view-cards-btn").addEventListener("click", () => setHistViewMode("cards"));
+document.getElementById("hist-view-table-btn").addEventListener("click", () => setHistViewMode("table"));
+
+// separa "Time x Time - Palpite" em { jogo, resto }; se não tiver " - ",
+// devolve o texto inteiro como jogo, sem segunda linha
+function splitJogoAposta(aposta) {
+  if (!aposta) return { jogo: "—", resto: null };
+  const idx = aposta.indexOf(" - ");
+  if (idx === -1) return { jogo: aposta, resto: null };
+  return { jogo: aposta.slice(0, idx), resto: aposta.slice(idx + 3) };
+}
+
+function resultHeaderClass(resultado) {
+  const r = (resultado || "").toLowerCase();
+  if (r === "green") return "result-green";
+  if (r === "red") return "result-red";
+  if (r === "void") return "result-void";
+  return "result-pending";
+}
+
+function editFromCard(idx) {
+  setHistViewMode("table");
+  startEdit(idx);
+}
+
+function renderBetsCards(bets) {
+  const grid = document.getElementById("bets-cards-grid");
+  if (!grid) return;
+
+  if (!bets.length) {
+    grid.innerHTML = `<div class="no-bets-msg">Nenhuma aposta nesse filtro ainda.</div>`;
+    return;
+  }
+
+  grid.innerHTML = bets.map((b, idx) => {
+    const { jogo, resto } = splitJogoAposta(b.aposta);
+    const oddTxt = b.odd ? b.odd.toFixed(3).replace(".", ",") : "";
+    const apostaLinha = resto
+      ? `${resto}${oddTxt ? " @" + oddTxt : ""}`
+      : (oddTxt ? `@${oddTxt}` : "");
+
+    const plClass = b.lucro_uni > 0 ? "positive" : b.lucro_uni < 0 ? "negative" : "";
+    const rodapeDireita = isResolved(b)
+      ? `<span class="bet-card-pl ${plClass}">${fmtDual(b.lucro_uni, b.lucro_reais, true)}</span>`
+      : `<div class="resolve-actions">
+           <button class="resolve-btn green" title="Green" onclick="resolveBetByIndex(${idx}, 'Green')">✓</button>
+           <button class="resolve-btn red" title="Red" onclick="resolveBetByIndex(${idx}, 'Red')">✕</button>
+           <button class="resolve-btn void" title="Void" onclick="resolveBetByIndex(${idx}, 'Void')">–</button>
+         </div>`;
+
+    return `
+      <div class="bet-card">
+        <div class="bet-card-header ${resultHeaderClass(b.resultado)}">
+          <span class="data">${b.data || "—"}</span>
+          <span class="tipster">${b.tipster || "—"}</span>
+          <span class="valor">${b.stake ? fmtDual(b.stake, b.stake_reais, false) : "—"}</span>
+          <button class="bet-card-edit" title="Editar" onclick="editFromCard(${idx})">✎</button>
+        </div>
+        <div class="bet-card-body">
+          <div class="bet-card-jogo">${jogo}</div>
+          ${apostaLinha ? `<div class="bet-card-aposta">${apostaLinha}</div>` : ""}
+        </div>
+        <div class="bet-card-footer">
+          <span class="bet-card-casa">${b.casa || "—"}</span>
+          ${rodapeDireita}
+        </div>
+      </div>
+    `;
+  }).join("");
 }
 
 // usado só na tabela do Histórico — soma os filtros rápidos (pendentes,
@@ -1062,7 +1154,7 @@ function renderAll() {
   document.getElementById("ultimas-gerais-block").style.display = mostrarMelhorPior ? "" : "none";
   if (mostrarMelhorPior) {
     const ultimasGerais = resolved.slice()
-      .sort((a, b) => (b.data_iso || "").localeCompare(a.data_iso || ""))
+      .sort(compareRecentFirst)
       .slice(0, 5);
     document.getElementById("ultimas-gerais-list").innerHTML = ultimasGerais.map(b => `
       <div class="ultima-tip-line">
@@ -1076,7 +1168,7 @@ function renderAll() {
   document.getElementById("ultimas-tips-block").style.display = ACTIVE_TIPSTER ? "" : "none";
   if (ACTIVE_TIPSTER) {
     const ultimas = bets.slice()
-      .sort((a, b) => (b.data_iso || "").localeCompare(a.data_iso || ""))
+      .sort(compareRecentFirst)
       .slice(0, 10);
     document.getElementById("ultimas-tips-list").innerHTML = ultimas.map(b => {
       const cls = b.lucro_uni > 0 ? "positive" : b.lucro_uni < 0 ? "negative" : "";
@@ -1109,7 +1201,7 @@ function renderAll() {
     const ultimas = bets
       .filter(isResolved)
       .slice()
-      .sort((a, b) => (b.data_iso || "").localeCompare(a.data_iso || ""))
+      .sort(compareRecentFirst)
       .slice(0, 10);
     const listEl = document.getElementById("ultimas-tips-list");
     listEl.innerHTML = ultimas.length
