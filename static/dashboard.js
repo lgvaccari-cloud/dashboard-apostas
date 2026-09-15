@@ -16,7 +16,6 @@ let ACTIVE_MES = null;
 let ONLY_PENDING = false;
 let ONLY_TODAY = false;
 let ONLY_YESTERDAY = false;
-let ONLY_FUTURE = false;
 let RANK_ONLY_TODAY = false;
 let RANK_ONLY_YESTERDAY = false;
 let AUTO_MES_APPLIED = false;
@@ -86,6 +85,11 @@ function fmtBRL(n, sign) {
 function fmtDual(nUni, nReais, sign) {
   if (SHOW_BRL) return fmtBRL(nReais, sign);
   return fmtUnits(nUni, sign);
+}
+
+// odd sempre com ponto decimal (não vírgula) e 2 casas — só na exibição
+function fmtOdd(odd) {
+  return odd.toFixed(2);
 }
 
 function fmtPct(n) {
@@ -343,6 +347,7 @@ document.getElementById("nav-geral").addEventListener("click", () => switchView(
 document.getElementById("brand-home").addEventListener("click", () => switchView("geral"));
 document.getElementById("nav-historico").addEventListener("click", () => {
   ONLY_PENDING = false;
+  document.getElementById("filter-pendentes").classList.remove("active");
   switchView("historico");
 });
 document.getElementById("nav-ranking").addEventListener("click", () => switchView("ranking"));
@@ -350,37 +355,43 @@ document.getElementById("nav-bancas").addEventListener("click", () => switchView
 
 document.getElementById("card-aberto").addEventListener("click", () => {
   ONLY_PENDING = true;
+  ONLY_TODAY = false;
+  ONLY_YESTERDAY = false;
   EDITING_IDX = null;
   switchView("historico");
+  document.getElementById("filter-pendentes").classList.add("active");
+  document.getElementById("filter-today").classList.remove("active");
+  document.getElementById("filter-yesterday").classList.remove("active");
 });
 
 document.getElementById("clear-pending-filter").addEventListener("click", () => {
   ONLY_PENDING = false;
+  document.getElementById("filter-pendentes").classList.remove("active");
   renderHistorico();
 });
 
 document.getElementById("filter-today").addEventListener("click", () => {
   ONLY_TODAY = !ONLY_TODAY;
-  if (ONLY_TODAY) { ONLY_YESTERDAY = false; ONLY_FUTURE = false; }
+  if (ONLY_TODAY) { ONLY_YESTERDAY = false; ONLY_PENDING = false; }
   document.getElementById("filter-today").classList.toggle("active", ONLY_TODAY);
   document.getElementById("filter-yesterday").classList.remove("active");
-  document.getElementById("filter-future").classList.remove("active");
+  document.getElementById("filter-pendentes").classList.remove("active");
   renderHistorico();
 });
 
 document.getElementById("filter-yesterday").addEventListener("click", () => {
   ONLY_YESTERDAY = !ONLY_YESTERDAY;
-  if (ONLY_YESTERDAY) { ONLY_TODAY = false; ONLY_FUTURE = false; }
+  if (ONLY_YESTERDAY) { ONLY_TODAY = false; ONLY_PENDING = false; }
   document.getElementById("filter-yesterday").classList.toggle("active", ONLY_YESTERDAY);
   document.getElementById("filter-today").classList.remove("active");
-  document.getElementById("filter-future").classList.remove("active");
+  document.getElementById("filter-pendentes").classList.remove("active");
   renderHistorico();
 });
 
-document.getElementById("filter-future").addEventListener("click", () => {
-  ONLY_FUTURE = !ONLY_FUTURE;
-  if (ONLY_FUTURE) { ONLY_TODAY = false; ONLY_YESTERDAY = false; }
-  document.getElementById("filter-future").classList.toggle("active", ONLY_FUTURE);
+document.getElementById("filter-pendentes").addEventListener("click", () => {
+  ONLY_PENDING = !ONLY_PENDING;
+  if (ONLY_PENDING) { ONLY_TODAY = false; ONLY_YESTERDAY = false; }
+  document.getElementById("filter-pendentes").classList.toggle("active", ONLY_PENDING);
   document.getElementById("filter-today").classList.remove("active");
   document.getElementById("filter-yesterday").classList.remove("active");
   renderHistorico();
@@ -615,13 +626,64 @@ function renderHistorico() {
         <td data-label="Tipster">${b.tipster || "—"}</td>
         <td data-label="Aposta">${b.aposta || "—"}</td>
         <td data-label="Stake">${b.stake ? fmtDual(b.stake, b.stake_reais, false) : "—"}</td>
-        <td data-label="Odd">${b.odd ? b.odd.toFixed(3).replace(".", ",") : "—"}</td>
+        <td data-label="Odd">${b.odd ? `<b>${fmtOdd(b.odd)}</b>` : "—"}</td>
         <td data-label="Resultado">${resolvedCell}</td>
         <td data-label="P/L" class="uni-cell ${uniClass}">${isResolved(b) ? fmtDual(b.lucro_uni, b.lucro_reais, true) : "—"}</td>
-        <td data-label="Ações"><button class="row-action-btn" title="Editar" onclick="startEdit(${idx})">✎</button></td>
+        <td data-label="Ações">
+          <div class="row-actions">
+            <button class="row-action-btn" title="Editar" onclick="startEdit(${idx})">✎</button>
+            ${rowMenuHtml(idx)}
+          </div>
+        </td>
       </tr>
     `;
   }).join("");
+}
+
+// ---------- Menu "..." de excluir aposta (compartilhado entre card e tabela) ----------
+function toggleRowMenu(menuId) {
+  document.querySelectorAll(".row-menu-popover").forEach(p => {
+    p.style.display = (p.id === menuId && p.style.display !== "block") ? "block" : "none";
+  });
+}
+
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".row-menu-wrap")) {
+    document.querySelectorAll(".row-menu-popover").forEach(p => { p.style.display = "none"; });
+  }
+});
+
+async function deleteBetByIndex(idx) {
+  const bet = CURRENT_HISTORICO_BETS[idx];
+  if (!bet) return;
+  document.querySelectorAll(".row-menu-popover").forEach(p => { p.style.display = "none"; });
+  if (!confirm("Excluir essa aposta? Essa ação não pode ser desfeita.")) return;
+
+  try {
+    const res = await fetch("/api/delete_bet", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mes: bet.mes, row: bet.row }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Erro ao excluir");
+    setTimeout(() => refreshMes(bet.mes), 400);
+  } catch (err) {
+    alert("Não consegui excluir: " + err.message);
+  }
+}
+
+function rowMenuHtml(idx, btnClass) {
+  const menuId = `row-menu-${idx}`;
+  const cls = btnClass || "row-action-btn";
+  return `
+    <div class="row-menu-wrap">
+      <button class="${cls}" title="Mais opções" onclick="toggleRowMenu('${menuId}')">⋯</button>
+      <div class="row-menu-popover" id="${menuId}">
+        <button onclick="deleteBetByIndex(${idx})">Excluir</button>
+      </div>
+    </div>
+  `;
 }
 
 function currentBets() {
@@ -678,10 +740,10 @@ function renderBetsCards(bets) {
 
   grid.innerHTML = bets.map((b, idx) => {
     const { jogo, resto } = splitJogoAposta(b.aposta);
-    const oddTxt = b.odd ? b.odd.toFixed(3).replace(".", ",") : "";
+    const oddTxt = b.odd ? fmtOdd(b.odd) : "";
     const apostaLinha = resto
-      ? `${resto}${oddTxt ? " @" + oddTxt : ""}`
-      : (oddTxt ? `@${oddTxt}` : "");
+      ? `${resto}${oddTxt ? ` <b>@${oddTxt}</b>` : ""}`
+      : (oddTxt ? `<b>@${oddTxt}</b>` : "");
 
     const plClass = b.lucro_uni > 0 ? "positive" : b.lucro_uni < 0 ? "negative" : "";
     const rodapeDireita = isResolved(b)
@@ -698,7 +760,10 @@ function renderBetsCards(bets) {
           <span class="data">${b.data || "—"}</span>
           <span class="tipster">${b.tipster || "—"}</span>
           <span class="valor">${b.stake ? fmtDual(b.stake, b.stake_reais, false) : "—"}</span>
-          <button class="bet-card-edit" title="Editar" onclick="editFromCard(${idx})">✎</button>
+          <div class="bet-card-header-actions">
+            <button class="bet-card-edit" title="Editar" onclick="editFromCard(${idx})">✎</button>
+            ${rowMenuHtml(idx, "bet-card-menu-btn")}
+          </div>
         </div>
         <div class="bet-card-body">
           <div class="bet-card-jogo">${jogo}</div>
@@ -720,7 +785,6 @@ function historicoBets() {
   if (ONLY_PENDING) result = result.filter(b => !isResolved(b));
   if (ONLY_TODAY) result = result.filter(b => b.data_iso === todayISO());
   if (ONLY_YESTERDAY) result = result.filter(b => b.data_iso === yesterdayISO());
-  if (ONLY_FUTURE) result = result.filter(b => !isResolved(b) && b.data_iso && b.data_iso > todayISO());
   return result;
 }
 
@@ -1132,7 +1196,7 @@ function renderAll() {
 
   const comOdd = bets.filter(b => b.odd > 0);
   const oddMedia = comOdd.length > 0 ? comOdd.reduce((s, b) => s + b.odd, 0) / comOdd.length : 0;
-  document.getElementById("metric-odd").textContent = comOdd.length > 0 ? oddMedia.toFixed(3).replace(".", ",") : "—";
+  document.getElementById("metric-odd").textContent = comOdd.length > 0 ? oddMedia.toFixed(3) : "—";
 
   const porTipster = {};
   const porTipsterReais = {};
