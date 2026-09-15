@@ -1331,3 +1331,31 @@ th.col-center, td.col-center { text-align: center !important; }
   color: white;
   font-weight: 600;
 }
+
+/* Campo espelho em R$ do Stake (unidades) — os dois sentidos funcionam:
+   digitar aqui preenche o campo de unidades sozinho, e vice-versa. */
+.stake-reais-input {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  font-size: 12px;
+  padding: 5px 7px;
+  border-radius: 8px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+}
+.stake-reais-input:focus {
+  color: var(--text);
+  border-style: solid;
+  border-color: var(--accent);
+  outline: none;
+}
+
+/* Horário colado na Data (Histórico) — mesma célula, mais discreto */
+.hist-horario {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}

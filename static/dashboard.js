@@ -87,7 +87,7 @@ function yesterdayISO() {
 // mais recente primeiro; dentro do mesmo dia, a linha mais nova da planilha
 // (maior número de linha) aparece primeiro
 function compareRecentFirst(a, b) {
-  const porData = (b.data_iso || "").localeCompare(a.data_iso || "");
+  const porData = (b.data_hora_sort || b.data_iso || "").localeCompare(a.data_hora_sort || a.data_iso || "");
   if (porData !== 0) return porData;
   return (b.row || 0) - (a.row || 0);
 }
@@ -157,6 +157,48 @@ function casaBadgeHtml(casa) {
 function fmtOdd(odd) {
   const tres = Number(odd).toFixed(3);
   return tres.endsWith("0") ? tres.slice(0, -1) : tres;
+}
+
+// Stake (unidades) <-> R$, nos dois sentidos — pra quem pensa em reais
+// (a maioria das pessoas) não precisar fazer a conta de cabeça e errar
+// (ex: digitar "0,38" tentando representar R$375, quando o certo é 0,375).
+// Um lado nunca reescreve o outro em loop: só atualiza o campo OPOSTO ao
+// que a pessoa está digitando, e alterar .value por código não dispara
+// 'input' de novo.
+function parseBRNumber(str) {
+  const limpo = String(str || "").trim().replace(/[^\d,.-]/g, "");
+  if (!limpo) return NaN;
+  // último separador (, ou .) é o decimal; os anteriores são milhar
+  const ultimaVirgula = limpo.lastIndexOf(",");
+  const ultimoPonto = limpo.lastIndexOf(".");
+  const posDecimal = Math.max(ultimaVirgula, ultimoPonto);
+  let normalizado;
+  if (posDecimal === -1) {
+    normalizado = limpo;
+  } else {
+    normalizado = limpo.slice(0, posDecimal).replace(/[.,]/g, "") + "." + limpo.slice(posDecimal + 1);
+  }
+  return Number(normalizado);
+}
+
+function syncFromUnits(unitsId, reaisId) {
+  const u = document.getElementById(unitsId);
+  const r = document.getElementById(reaisId);
+  if (!u || !r) return;
+  const n = Number(u.value.replace(",", "."));
+  if (!u.value.trim() || isNaN(n)) { r.value = ""; return; }
+  const reais = n * (window.STAKE_BASE || 1000);
+  r.value = reais.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function syncFromReais(reaisId, unitsId) {
+  const r = document.getElementById(reaisId);
+  const u = document.getElementById(unitsId);
+  if (!r || !u) return;
+  const n = parseBRNumber(r.value);
+  if (!r.value.trim() || isNaN(n)) { u.value = ""; return; }
+  const units = n / (window.STAKE_BASE || 1000);
+  u.value = units.toFixed(4).replace(".", ",");
 }
 
 function fmtPct(n) {
@@ -650,7 +692,7 @@ function applySort(list, state, getter) {
 }
 
 const HIST_HEADERS = [
-  ["th-hist-data", "data_iso"],
+  ["th-hist-data", "data_hora_sort"],
   ["th-hist-casa", "casa"],
   ["th-hist-tipster", "tipster"],
   ["th-hist-aposta", "aposta"],
@@ -748,14 +790,23 @@ function cancelEdit() {
 async function saveEdit(idx) {
   const bet = CURRENT_HISTORICO_BETS[idx];
   if (!bet) return;
+
+  // Cards e Tabela renderizam os dois ao mesmo tempo (só um fica visível),
+  // então cada campo tem um id -tbl e um -card — aqui lê sempre do conjunto
+  // que está realmente na tela, senão a edição pelo modo Tabela salvaria os
+  // valores (não editados) do Cards por baixo, sem avisar nada.
+  const suf = HIST_VIEW_MODE === "table" ? "tbl" : "card";
+  const val = (campo) => document.getElementById(`edit-${campo}-${idx}-${suf}`).value;
+
   const updates = {
-    data: document.getElementById(`edit-data-${idx}`).value,
-    casa: document.getElementById(`edit-casa-${idx}`).value,
-    tipster: document.getElementById(`edit-tipster-${idx}`).value,
-    aposta: document.getElementById(`edit-aposta-${idx}`).value,
-    odd: document.getElementById(`edit-odd-${idx}`).value,
-    stake: document.getElementById(`edit-stake-${idx}`).value,
-    resultado: document.getElementById(`edit-resultado-${idx}`).value,
+    data: val("data"),
+    horario: val("horario"),
+    casa: val("casa"),
+    tipster: val("tipster"),
+    aposta: val("aposta"),
+    odd: val("odd"),
+    stake: val("stake"),
+    resultado: val("resultado"),
   };
 
   const anterior = { ...bet };
@@ -764,6 +815,7 @@ async function saveEdit(idx) {
   bet.aposta = updates.aposta;
   bet.resultado = updates.resultado;
   bet.data = updates.data;
+  bet.horario = updates.horario;
   EDITING_IDX = null;
   renderHistorico();
 
@@ -808,14 +860,20 @@ function renderHistorico() {
     if (editing) {
       return `
         <tr>
-          <td data-label="Data"><input class="edit-input small" id="edit-data-${idx}" value="${esc(b.data)}"></td>
-          <td data-label="Casa"><input class="edit-input" id="edit-casa-${idx}" value="${esc(b.casa)}"></td>
-          <td data-label="Tipster"><input class="edit-input" id="edit-tipster-${idx}" value="${esc(b.tipster)}"></td>
-          <td data-label="Aposta"><input class="edit-input" id="edit-aposta-${idx}" value="${esc(b.aposta)}"></td>
-          <td data-label="Stake"><input class="edit-input small" id="edit-stake-${idx}" value="${esc(b.stake ? b.stake.toFixed(4).replace(".", ",") : "")}"></td>
-          <td data-label="Odd"><input class="edit-input small" id="edit-odd-${idx}" value="${esc(b.odd ? b.odd.toFixed(3).replace(".", ",") : "")}"></td>
+          <td data-label="Data">
+            <input class="edit-input small" id="edit-data-${idx}-tbl" value="${esc(b.data)}">
+            <input class="edit-input small" id="edit-horario-${idx}-tbl" value="${esc(b.horario)}" placeholder="Horário">
+          </td>
+          <td data-label="Casa"><input class="edit-input" id="edit-casa-${idx}-tbl" value="${esc(b.casa)}"></td>
+          <td data-label="Tipster"><input class="edit-input" id="edit-tipster-${idx}-tbl" value="${esc(b.tipster)}"></td>
+          <td data-label="Aposta"><input class="edit-input" id="edit-aposta-${idx}-tbl" value="${esc(b.aposta)}"></td>
+          <td data-label="Stake">
+            <input class="edit-input small" id="edit-stake-${idx}-tbl" value="${esc(b.stake ? b.stake.toFixed(4).replace(".", ",") : "")}" oninput="syncFromUnits('edit-stake-${idx}-tbl', 'edit-stake-reais-${idx}-tbl')">
+            <input class="stake-reais-input" id="edit-stake-reais-${idx}-tbl" placeholder="R$" oninput="syncFromReais('edit-stake-reais-${idx}-tbl', 'edit-stake-${idx}-tbl')">
+          </td>
+          <td data-label="Odd"><input class="edit-input small" id="edit-odd-${idx}-tbl" value="${esc(b.odd ? b.odd.toFixed(3).replace(".", ",") : "")}"></td>
           <td data-label="Resultado">
-            <select class="edit-input" id="edit-resultado-${idx}">
+            <select class="edit-input" id="edit-resultado-${idx}-tbl">
               <option value="" ${!b.resultado ? "selected" : ""}>Pendente</option>
               <option value="Green" ${b.resultado === "Green" ? "selected" : ""}>Green</option>
               <option value="Red" ${b.resultado === "Red" ? "selected" : ""}>Red</option>
@@ -843,7 +901,7 @@ function renderHistorico() {
 
     return `
       <tr>
-        <td data-label="Data">${b.data || "—"}</td>
+        <td data-label="Data">${b.data || "—"}${b.horario ? ` <span class="hist-horario">${b.horario}</span>` : ""}</td>
         <td data-label="Casa">${casaBadgeHtml(b.casa)}</td>
         <td data-label="Tipster">${b.tipster || "—"}</td>
         <td data-label="Aposta">${b.aposta || "—"}</td>
@@ -860,6 +918,11 @@ function renderHistorico() {
       </tr>
     `;
   }).join("");
+
+  if (EDITING_IDX !== null) {
+    syncFromUnits(`edit-stake-${EDITING_IDX}-tbl`, `edit-stake-reais-${EDITING_IDX}-tbl`);
+    syncFromUnits(`edit-stake-${EDITING_IDX}-card`, `edit-stake-reais-${EDITING_IDX}-card`);
+  }
 }
 
 // ---------- Menu "..." de excluir aposta (compartilhado entre card e tabela) ----------
@@ -973,14 +1036,15 @@ function renderBetsCards(bets) {
       return `
         <div class="bet-card bet-card-editing">
           <div class="bet-card-header">
-            <input class="edit-input small" id="edit-stake-${idx}" value="${esc(b.stake ? b.stake.toFixed(4).replace(".", ",") : "")}" placeholder="Stake">
-            <input class="edit-input" id="edit-tipster-${idx}" value="${esc(b.tipster)}" placeholder="Tipster" style="flex:1;">
+            <input class="edit-input small" id="edit-stake-${idx}-card" value="${esc(b.stake ? b.stake.toFixed(4).replace(".", ",") : "")}" placeholder="Stake" oninput="syncFromUnits('edit-stake-${idx}-card', 'edit-stake-reais-${idx}-card')">
+            <input class="stake-reais-input" id="edit-stake-reais-${idx}-card" placeholder="R$" oninput="syncFromReais('edit-stake-reais-${idx}-card', 'edit-stake-${idx}-card')">
+            <input class="edit-input" id="edit-tipster-${idx}-card" value="${esc(b.tipster)}" placeholder="Tipster" style="flex:1;">
           </div>
           <div class="bet-card-body">
-            <input class="edit-input" id="edit-aposta-${idx}" value="${esc(b.aposta)}" placeholder="Jogo - Aposta" style="margin-bottom:8px; width:100%;">
+            <input class="edit-input" id="edit-aposta-${idx}-card" value="${esc(b.aposta)}" placeholder="Jogo - Aposta" style="margin-bottom:8px; width:100%;">
             <div style="display:flex; gap:8px;">
-              <input class="edit-input small" id="edit-odd-${idx}" value="${esc(b.odd ? b.odd.toFixed(3).replace(".", ",") : "")}" placeholder="Odd">
-              <select class="edit-input" id="edit-resultado-${idx}">
+              <input class="edit-input small" id="edit-odd-${idx}-card" value="${esc(b.odd ? b.odd.toFixed(3).replace(".", ",") : "")}" placeholder="Odd">
+              <select class="edit-input" id="edit-resultado-${idx}-card">
                 <option value="" ${!b.resultado ? "selected" : ""}>Pendente</option>
                 <option value="Green" ${b.resultado === "Green" ? "selected" : ""}>Green</option>
                 <option value="Red" ${b.resultado === "Red" ? "selected" : ""}>Red</option>
@@ -990,8 +1054,9 @@ function renderBetsCards(bets) {
           </div>
           <div class="bet-card-footer">
             <div style="display:flex; gap:8px; flex:1;">
-              <input class="edit-input" id="edit-casa-${idx}" value="${esc(b.casa)}" placeholder="Casa" style="flex:1;">
-              <input class="edit-input small" id="edit-data-${idx}" value="${esc(b.data)}" placeholder="Data">
+              <input class="edit-input" id="edit-casa-${idx}-card" value="${esc(b.casa)}" placeholder="Casa" style="flex:1;">
+              <input class="edit-input small" id="edit-data-${idx}-card" value="${esc(b.data)}" placeholder="Data">
+              <input class="edit-input small" id="edit-horario-${idx}-card" value="${esc(b.horario)}" placeholder="Horário">
             </div>
             <div class="row-actions">
               <button class="row-action-btn save" title="Salvar" onclick="saveEdit(${idx})">✓</button>
@@ -1032,7 +1097,7 @@ function renderBetsCards(bets) {
           ${apostaLinha ? `<div class="bet-card-aposta">${apostaLinha}</div>` : ""}
         </div>
         <div class="bet-card-footer">
-          <span class="bet-card-footer-left">${casaBadgeHtml(b.casa)}<span class="bet-card-data">· ${b.data || "—"}</span></span>
+          <span class="bet-card-footer-left">${casaBadgeHtml(b.casa)}<span class="bet-card-data">· ${b.data || "—"}${b.horario ? ` ${b.horario}` : ""}</span></span>
           <div class="bet-card-footer-right">${rodapeDireita}</div>
         </div>
       </div>
@@ -1099,6 +1164,7 @@ function openNewBetModal() {
   const dd = String(hoje.getDate()).padStart(2, "0");
   const mm = String(hoje.getMonth() + 1).padStart(2, "0");
   document.getElementById("new-bet-data").value = `${dd}/${mm}/${hoje.getFullYear()}`;
+  document.getElementById("new-bet-horario").value = "";
   document.getElementById("new-bet-casa").value = "";
   document.getElementById("new-bet-tipster").value = "";
   NEW_BET_TIPO = "";
@@ -1107,6 +1173,7 @@ function openNewBetModal() {
   document.getElementById("new-bet-mercado").value = "";
   document.getElementById("new-bet-odd").value = "";
   document.getElementById("new-bet-stake").value = "0,75";
+  syncFromUnits("new-bet-stake", "new-bet-stake-reais");
   document.getElementById("new-bet-resultado").value = "";
   document.getElementById("new-bet-print-file").value = "";
   document.getElementById("new-bet-print-caption").value = "";
@@ -1174,6 +1241,7 @@ document.getElementById("new-bet-save").addEventListener("click", async () => {
   const mes = document.getElementById("new-bet-mes").value;
   const fields = {
     data: document.getElementById("new-bet-data").value,
+    horario: document.getElementById("new-bet-horario").value,
     casa: document.getElementById("new-bet-casa").value,
     tipster: document.getElementById("new-bet-tipster").value,
     aposta: document.getElementById("new-bet-aposta").value,
