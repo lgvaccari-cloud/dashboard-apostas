@@ -1286,184 +1286,8 @@ function openNewBetModal() {
   document.getElementById("new-bet-overlay").style.display = "flex";
 }
 
-// ---------- Recortar print antes de enviar ----------
-// Funciona com arquivo escolhido OU imagem colada — os dois passam por
-// aqui. A caixa de recorte é um <div> posicionado por cima da <img>, e o
-// corte de verdade (em pixels reais da imagem) só acontece na confirmação,
-// via canvas — assim funciona em qualquer tamanho de tela sem contas
-// complicadas de escala no meio do arrasto.
+// ---------- Colar imagem copiada (Ctrl+V) no formulário de print ----------
 let PASTED_IMAGE = null;
-let CROP_ORIGINAL_FILE = null;
-let CROP_BOX = { left: 0, top: 0, width: 0, height: 0 };
-const CROP_MIN_SIZE = 30;
-
-function abrirRecorte(file) {
-  CROP_ORIGINAL_FILE = file;
-  const img = document.getElementById("crop-image");
-  const url = URL.createObjectURL(file);
-  img.onload = () => {
-    document.getElementById("crop-overlay").style.display = "flex";
-    // espera o layout assentar antes de medir o tamanho renderizado da img
-    requestAnimationFrame(posicionarCropBoxInicial);
-  };
-  img.src = url;
-}
-
-function posicionarCropBoxInicial() {
-  const img = document.getElementById("crop-image");
-  const wrap = document.getElementById("crop-canvas-wrap");
-  const imgRect = img.getBoundingClientRect();
-  const wrapRect = wrap.getBoundingClientRect();
-  const offsetLeft = imgRect.left - wrapRect.left;
-  const offsetTop = imgRect.top - wrapRect.top;
-  CROP_BOX = {
-    left: offsetLeft + imgRect.width * 0.05,
-    top: offsetTop + imgRect.height * 0.05,
-    width: imgRect.width * 0.9,
-    height: imgRect.height * 0.9,
-  };
-  aplicarCropBox();
-}
-
-function aplicarCropBox() {
-  const box = document.getElementById("crop-box");
-  box.style.left = `${CROP_BOX.left}px`;
-  box.style.top = `${CROP_BOX.top}px`;
-  box.style.width = `${CROP_BOX.width}px`;
-  box.style.height = `${CROP_BOX.height}px`;
-}
-
-function limitesDaImagem() {
-  const img = document.getElementById("crop-image");
-  const wrap = document.getElementById("crop-canvas-wrap");
-  const imgRect = img.getBoundingClientRect();
-  const wrapRect = wrap.getBoundingClientRect();
-  const left = imgRect.left - wrapRect.left;
-  const top = imgRect.top - wrapRect.top;
-  return { left, top, right: left + imgRect.width, bottom: top + imgRect.height };
-}
-
-// Arrastar o corpo da caixa (mover) ou um dos 4 cantos (redimensionar) —
-// Pointer Events cobre mouse e touch com o mesmo código.
-(function setupCropDrag() {
-  const box = document.getElementById("crop-box");
-  let modo = null; // "move" | "nw" | "ne" | "sw" | "se"
-  let inicioPointer = { x: 0, y: 0 };
-  let inicioBox = { left: 0, top: 0, width: 0, height: 0 };
-
-  function onPointerDown(e, m) {
-    modo = m;
-    inicioPointer = { x: e.clientX, y: e.clientY };
-    inicioBox = { ...CROP_BOX };
-    e.target.setPointerCapture?.(e.pointerId);
-    e.preventDefault();
-  }
-
-  box.addEventListener("pointerdown", (e) => {
-    if (e.target.dataset.handle) return; // tratado pelo handle, não pelo corpo
-    onPointerDown(e, "move");
-  });
-  box.querySelectorAll(".crop-handle").forEach(h => {
-    h.addEventListener("pointerdown", (e) => onPointerDown(e, h.dataset.handle));
-  });
-
-  window.addEventListener("pointermove", (e) => {
-    if (!modo) return;
-    const limites = limitesDaImagem();
-    const dx = e.clientX - inicioPointer.x;
-    const dy = e.clientY - inicioPointer.y;
-
-    if (modo === "move") {
-      let novoLeft = inicioBox.left + dx;
-      let novoTop = inicioBox.top + dy;
-      novoLeft = Math.max(limites.left, Math.min(novoLeft, limites.right - inicioBox.width));
-      novoTop = Math.max(limites.top, Math.min(novoTop, limites.bottom - inicioBox.height));
-      CROP_BOX.left = novoLeft;
-      CROP_BOX.top = novoTop;
-    } else {
-      // redimensiona a partir do canto oposto ao que está sendo arrastado
-      let { left, top, width, height } = inicioBox;
-      const direita = left + width, baixo = top + height;
-      if (modo === "nw") {
-        left = Math.min(inicioBox.left + dx, direita - CROP_MIN_SIZE);
-        top = Math.min(inicioBox.top + dy, baixo - CROP_MIN_SIZE);
-        left = Math.max(left, limites.left);
-        top = Math.max(top, limites.top);
-        width = direita - left;
-        height = baixo - top;
-      } else if (modo === "ne") {
-        top = Math.min(inicioBox.top + dy, baixo - CROP_MIN_SIZE);
-        top = Math.max(top, limites.top);
-        let novaDireita = Math.min(direita + dx, limites.right);
-        width = Math.max(CROP_MIN_SIZE, novaDireita - left);
-        height = baixo - top;
-      } else if (modo === "sw") {
-        left = Math.min(inicioBox.left + dx, direita - CROP_MIN_SIZE);
-        left = Math.max(left, limites.left);
-        let novoBaixo = Math.min(baixo + dy, limites.bottom);
-        width = direita - left;
-        height = Math.max(CROP_MIN_SIZE, novoBaixo - top);
-      } else if (modo === "se") {
-        let novaDireita = Math.min(direita + dx, limites.right);
-        let novoBaixo = Math.min(baixo + dy, limites.bottom);
-        width = Math.max(CROP_MIN_SIZE, novaDireita - left);
-        height = Math.max(CROP_MIN_SIZE, novoBaixo - top);
-      }
-      CROP_BOX = { left, top, width, height };
-    }
-    aplicarCropBox();
-  });
-
-  window.addEventListener("pointerup", () => { modo = null; });
-})();
-
-function fecharRecorte() {
-  document.getElementById("crop-overlay").style.display = "none";
-  document.getElementById("crop-image").src = "";
-  CROP_ORIGINAL_FILE = null;
-}
-
-function usarImagemFinal(file) {
-  PASTED_IMAGE = file;
-  document.getElementById("new-bet-print-file").value = "";
-  const url = URL.createObjectURL(file);
-  document.getElementById("new-bet-paste-preview").innerHTML = `<img src="${url}" alt="Print escolhido">`;
-  document.getElementById("new-bet-paste-zone").classList.add("has-image");
-}
-
-document.getElementById("crop-cancel").addEventListener("click", () => {
-  fecharRecorte();
-});
-
-document.getElementById("crop-skip").addEventListener("click", () => {
-  usarImagemFinal(CROP_ORIGINAL_FILE);
-  fecharRecorte();
-});
-
-document.getElementById("crop-confirm").addEventListener("click", () => {
-  const img = document.getElementById("crop-image");
-  const limites = limitesDaImagem();
-  const escala = img.naturalWidth / (limites.right - limites.left);
-
-  const sx = (CROP_BOX.left - limites.left) * escala;
-  const sy = (CROP_BOX.top - limites.top) * escala;
-  const sw = CROP_BOX.width * escala;
-  const sh = CROP_BOX.height * escala;
-
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(sw);
-  canvas.height = Math.round(sh);
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
-
-  canvas.toBlob((blob) => {
-    if (!blob) { usarImagemFinal(CROP_ORIGINAL_FILE); fecharRecorte(); return; }
-    const nomeOriginal = CROP_ORIGINAL_FILE.name || "print.png";
-    const arquivoCortado = new File([blob], nomeOriginal, { type: blob.type || "image/png" });
-    usarImagemFinal(arquivoCortado);
-    fecharRecorte();
-  }, "image/png");
-});
 
 document.addEventListener("paste", (e) => {
   const printForm = document.getElementById("new-bet-print-form");
@@ -1472,19 +1296,22 @@ document.addEventListener("paste", (e) => {
   for (const item of items) {
     if (item.type.startsWith("image/")) {
       const file = item.getAsFile();
+      PASTED_IMAGE = file;
       document.getElementById("new-bet-print-file").value = "";
+      const url = URL.createObjectURL(file);
+      document.getElementById("new-bet-paste-preview").innerHTML = `<img src="${url}" alt="Print colado">`;
+      document.getElementById("new-bet-paste-zone").classList.add("has-image");
       e.preventDefault();
-      abrirRecorte(file);
       return;
     }
   }
 });
 
 // se escolher um arquivo pelo botão, isso tem prioridade sobre o que foi colado antes
-document.getElementById("new-bet-print-file").addEventListener("change", (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  abrirRecorte(file);
+document.getElementById("new-bet-print-file").addEventListener("change", () => {
+  PASTED_IMAGE = null;
+  document.getElementById("new-bet-paste-preview").innerHTML = "";
+  document.getElementById("new-bet-paste-zone").classList.remove("has-image");
 });
 
 function setNewBetMode(mode) {
