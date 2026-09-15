@@ -841,6 +841,13 @@ function renderHistorico() {
   if (!tbody) return;
 
   let bets = historicoBets().slice();
+  // ordenar por horário só faz sentido dentro de um único dia — com o mês
+  // inteiro visível, "mais cedo pra mais tarde" pularia de dia em dia sem
+  // ajudar em nada. Se o filtro Hoje/Ontem foi desligado enquanto essa
+  // ordenação estava ativa, volta pro padrão (mais recente primeiro).
+  if (SORT_STATE.hist.key === "data_hora_sort" && !ONLY_TODAY && !ONLY_YESTERDAY) {
+    SORT_STATE.hist = { key: null, dir: 1 };
+  }
   if (SORT_STATE.hist.key) {
     bets = applySort(bets, SORT_STATE.hist, (b, k) => b[k]);
   } else {
@@ -2256,12 +2263,16 @@ setupSortableHeaders(HIST_HEADERS, "hist", renderHistorico);
 function syncSortByHorarioBtn() {
   const btn = document.getElementById("sort-by-horario-btn");
   if (!btn) return;
-  const ativo = SORT_STATE.hist.key === "data_hora_sort";
+  const disponivel = ONLY_TODAY || ONLY_YESTERDAY;
+  btn.disabled = !disponivel;
+  btn.title = disponivel ? "" : "Só funciona com o filtro Hoje ou Ontem ativado";
+  const ativo = disponivel && SORT_STATE.hist.key === "data_hora_sort";
   btn.classList.toggle("active", ativo);
   const arrow = btn.querySelector(".sort-arrow");
   if (arrow) arrow.textContent = ativo ? (SORT_STATE.hist.dir === 1 ? "▲" : "▼") : "";
 }
 document.getElementById("sort-by-horario-btn").addEventListener("click", () => {
+  if (!(ONLY_TODAY || ONLY_YESTERDAY)) return;
   document.getElementById("th-hist-data").click();
 });
 setupSortableHeaders(RANK_HEADERS, "rank", renderRanking);

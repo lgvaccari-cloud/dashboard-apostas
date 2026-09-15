@@ -1399,3 +1399,10 @@ th.col-center, td.col-center { text-align: center !important; }
   gap: 8px;
   margin-top: 10px;
 }
+
+/* Botão "Por horário" desabilitado (só funciona com Hoje/Ontem ativo) */
+.chip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.chip:disabled:hover { border-color: var(--border); }
