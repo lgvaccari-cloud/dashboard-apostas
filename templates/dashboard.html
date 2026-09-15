@@ -65,6 +65,12 @@
         <select id="tipster-select" class="mobile-filter-select"></select>
       </div>
 
+      <div class="filters-bar" id="casa-filter-bar" style="display:none">
+        <span class="filters-label">Filtro por casa</span>
+        <div id="casa-chips" class="chips"></div>
+        <select id="casa-select" class="mobile-filter-select"></select>
+      </div>
+
       <div class="active-filters-bar" id="active-filters-bar">
         <span class="active-filters-label">▽ FILTROS ATIVOS</span>
         <div id="active-filter-chips" class="active-chips"></div>
@@ -349,7 +355,7 @@
             <input type="text" id="new-bet-casa" placeholder="Bet365">
           </label>
           <label>Tipster
-            <input type="text" id="new-bet-tipster" placeholder="Nome do tipster">
+            <select id="new-bet-tipster"></select>
           </label>
           <label class="modal-span-2">Aposta
             <input type="text" id="new-bet-aposta" placeholder="Descrição da aposta">
@@ -358,7 +364,10 @@
             <input type="text" id="new-bet-mercado" placeholder="Under, HC, ML...">
           </label>
           <label>Tipo
-            <input type="text" id="new-bet-tipo" placeholder="Pré, Live...">
+            <div class="tipo-toggle">
+              <button type="button" class="tipo-btn" id="new-bet-tipo-pre" data-tipo="Pré">Pré</button>
+              <button type="button" class="tipo-btn" id="new-bet-tipo-live" data-tipo="Live">Live</button>
+            </div>
           </label>
           <label>Odd
             <input type="text" id="new-bet-odd" placeholder="1,85">
