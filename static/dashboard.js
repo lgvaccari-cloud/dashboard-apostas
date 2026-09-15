@@ -13,6 +13,8 @@ const ICON_TARGET = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" 
 
 let ALL_BETS = [];
 let ACTIVE_TIPSTER = null;
+let ACTIVE_CASA = null;
+let NEW_BET_TIPO = "";
 let ACTIVE_MES = null;
 let ONLY_PENDING = false;
 let ONLY_TODAY = false;
@@ -118,9 +120,11 @@ function fmtDual(nUni, nReais, sign) {
   return fmtUnits(nUni, sign);
 }
 
-// odd sempre com ponto decimal (não vírgula) e 2 casas — só na exibição
+// odd sempre com ponto decimal (não vírgula). Mostra a 3ª casa só quando ela
+// existe de verdade: 1.80 fica "1.80", 1.675 fica "1.675".
 function fmtOdd(odd) {
-  return odd.toFixed(2);
+  const tres = Number(odd).toFixed(3);
+  return tres.endsWith("0") ? tres.slice(0, -1) : tres;
 }
 
 function fmtPct(n) {
@@ -268,6 +272,7 @@ async function loadData(force) {
     tryAutoSelectMonth();
     renderMesChips();
     renderChips();
+    renderCasaChips();
     populateNewBetMesOptions();
     renderAll();
   } catch (err) {
@@ -345,6 +350,55 @@ document.getElementById("tipster-select").addEventListener("change", (e) => {
   renderAll();
 });
 
+// ---------- Chips de casa (só aparecem com um mês selecionado) ----------
+function renderCasaChips() {
+  const bar = document.getElementById("casa-filter-bar");
+  if (!ACTIVE_MES || CURRENT_VIEW === "ranking" || CURRENT_VIEW === "bancas" || CURRENT_VIEW === "config") {
+    bar.style.display = "none";
+    return;
+  }
+  bar.style.display = "";
+
+  const betsDoMes = ALL_BETS.filter(b => b.mes === ACTIVE_MES);
+  const casas = [...new Set(betsDoMes.map(b => b.casa).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
+  const container = document.getElementById("casa-chips");
+  container.innerHTML = "";
+
+  const chipTodos = document.createElement("button");
+  chipTodos.className = "chip chip-all" + (ACTIVE_CASA ? "" : " active");
+  chipTodos.textContent = "Todas";
+  chipTodos.onclick = () => {
+    if (!ACTIVE_CASA) return;
+    ACTIVE_CASA = null;
+    renderCasaChips();
+    renderAll();
+  };
+  container.appendChild(chipTodos);
+
+  casas.forEach(c => {
+    const chip = document.createElement("button");
+    chip.className = "chip" + (ACTIVE_CASA === c ? " active" : "");
+    chip.textContent = c;
+    chip.onclick = () => {
+      ACTIVE_CASA = (ACTIVE_CASA === c) ? null : c;
+      renderCasaChips();
+      renderAll();
+    };
+    container.appendChild(chip);
+  });
+
+  const select = document.getElementById("casa-select");
+  select.innerHTML = `<option value="">Todas as casas</option>` +
+    casas.map(c => `<option value="${esc(c)}" ${ACTIVE_CASA === c ? "selected" : ""}>${esc(c)}</option>`).join("");
+}
+
+document.getElementById("casa-select").addEventListener("change", (e) => {
+  ACTIVE_CASA = e.target.value || null;
+  renderCasaChips();
+  renderAll();
+});
+
 // ---------- Chips de mês ----------
 function renderMesChips() {
   // ordem cronológica, do mês mais recente pro mais antigo
@@ -359,8 +413,10 @@ function renderMesChips() {
     if (!ACTIVE_MES) return;
     ACTIVE_MES = null;
     ACTIVE_TIPSTER = null;
+    ACTIVE_CASA = null;
     renderMesChips();
     renderChips();
+    renderCasaChips();
     renderAll();
   };
   container.appendChild(chipTodos);
@@ -372,8 +428,10 @@ function renderMesChips() {
     chip.onclick = () => {
       ACTIVE_MES = (ACTIVE_MES === m) ? null : m;
       ACTIVE_TIPSTER = null; // a lista de tipsters muda de mês pra mês
+      ACTIVE_CASA = null;
       renderMesChips();
       renderChips();
+      renderCasaChips();
       renderAll();
     };
     container.appendChild(chip);
@@ -387,8 +445,10 @@ function renderMesChips() {
 document.getElementById("mes-select").addEventListener("change", (e) => {
   ACTIVE_MES = e.target.value || null;
   ACTIVE_TIPSTER = null;
+  ACTIVE_CASA = null;
   renderMesChips();
   renderChips();
+  renderCasaChips();
   renderAll();
 });
 
@@ -397,8 +457,9 @@ function renderActiveFiltersBar() {
   const bar = document.getElementById("active-filters-bar");
   const container = document.getElementById("active-filter-chips");
   const filtros = [];
-  if (ACTIVE_MES) filtros.push({ label: `Mês: ${formatMesLabel(ACTIVE_MES)}`, clear: () => { ACTIVE_MES = null; ACTIVE_TIPSTER = null; } });
+  if (ACTIVE_MES) filtros.push({ label: `Mês: ${formatMesLabel(ACTIVE_MES)}`, clear: () => { ACTIVE_MES = null; ACTIVE_TIPSTER = null; ACTIVE_CASA = null; } });
   if (ACTIVE_TIPSTER) filtros.push({ label: `Tipster: ${ACTIVE_TIPSTER}`, clear: () => { ACTIVE_TIPSTER = null; } });
+  if (ACTIVE_CASA) filtros.push({ label: `Casa: ${ACTIVE_CASA}`, clear: () => { ACTIVE_CASA = null; } });
 
   if (!filtros.length) {
     bar.style.display = "none";
@@ -414,6 +475,7 @@ function renderActiveFiltersBar() {
       f.clear();
       renderMesChips();
       renderChips();
+      renderCasaChips();
       renderActiveFiltersBar();
       renderAll();
     };
@@ -424,8 +486,10 @@ function renderActiveFiltersBar() {
 document.getElementById("clear-all-filters").addEventListener("click", () => {
   ACTIVE_MES = null;
   ACTIVE_TIPSTER = null;
+  ACTIVE_CASA = null;
   renderMesChips();
   renderChips();
+  renderCasaChips();
   renderAll();
 });
 
@@ -814,6 +878,7 @@ function rowMenuHtml(idx, btnClass) {
 function currentBets() {
   let result = ALL_BETS;
   if (ACTIVE_TIPSTER) result = result.filter(b => b.tipster === ACTIVE_TIPSTER);
+  if (ACTIVE_CASA) result = result.filter(b => b.casa === ACTIVE_CASA);
   if (ACTIVE_MES) result = result.filter(b => b.mes === ACTIVE_MES);
   return result;
 }
@@ -968,19 +1033,47 @@ function populateNewBetMesOptions() {
   });
 }
 
+function populateNewBetTipsterOptions() {
+  const select = document.getElementById("new-bet-tipster");
+  if (!select) return;
+  const mesEscolhido = document.getElementById("new-bet-mes").value;
+  const anterior = select.value;
+  const tipsters = [...new Set(
+    ALL_BETS.filter(b => !mesEscolhido || b.mes === mesEscolhido)
+      .map(b => (b.tipster || "").trim())
+      .filter(Boolean)
+  )].sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
+
+  select.innerHTML = `<option value="">Sem tipster</option>` +
+    tipsters.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join("");
+  if (tipsters.includes(anterior)) select.value = anterior;
+}
+
+function setNewBetTipo(tipo) {
+  NEW_BET_TIPO = (NEW_BET_TIPO === tipo) ? "" : tipo;
+  document.getElementById("new-bet-tipo-pre").classList.toggle("active", NEW_BET_TIPO === "Pré");
+  document.getElementById("new-bet-tipo-live").classList.toggle("active", NEW_BET_TIPO === "Live");
+}
+
+document.getElementById("new-bet-mes").addEventListener("change", populateNewBetTipsterOptions);
+document.getElementById("new-bet-tipo-pre").addEventListener("click", () => setNewBetTipo("Pré"));
+document.getElementById("new-bet-tipo-live").addEventListener("click", () => setNewBetTipo("Live"));
+
 function openNewBetModal() {
   populateNewBetMesOptions();
+  populateNewBetTipsterOptions();
   const hoje = new Date();
   const dd = String(hoje.getDate()).padStart(2, "0");
   const mm = String(hoje.getMonth() + 1).padStart(2, "0");
   document.getElementById("new-bet-data").value = `${dd}/${mm}/${hoje.getFullYear()}`;
   document.getElementById("new-bet-casa").value = "";
   document.getElementById("new-bet-tipster").value = "";
+  NEW_BET_TIPO = "";
+  setNewBetTipo("");
   document.getElementById("new-bet-aposta").value = "";
   document.getElementById("new-bet-mercado").value = "";
-  document.getElementById("new-bet-tipo").value = "";
   document.getElementById("new-bet-odd").value = "";
-  document.getElementById("new-bet-stake").value = "";
+  document.getElementById("new-bet-stake").value = "0,75";
   document.getElementById("new-bet-resultado").value = "";
   document.getElementById("new-bet-print-file").value = "";
   document.getElementById("new-bet-print-caption").value = "";
@@ -1052,7 +1145,7 @@ document.getElementById("new-bet-save").addEventListener("click", async () => {
     tipster: document.getElementById("new-bet-tipster").value,
     aposta: document.getElementById("new-bet-aposta").value,
     mercado: document.getElementById("new-bet-mercado").value,
-    tipo: document.getElementById("new-bet-tipo").value,
+    tipo: NEW_BET_TIPO,
     odd: document.getElementById("new-bet-odd").value,
     stake: document.getElementById("new-bet-stake").value,
     resultado: document.getElementById("new-bet-resultado").value,
@@ -1273,7 +1366,7 @@ function renderBancasTable() {
 
   const linhasOrdenadas = SORT_STATE.banca.key
     ? applySort(LAST_BANCAS_RESUMO, SORT_STATE.banca, (l, k) => l[k])
-    : LAST_BANCAS_RESUMO.slice().sort((a, b) => b.lucro - a.lucro);
+    : LAST_BANCAS_RESUMO.slice().sort((a, b) => a.casa.localeCompare(b.casa, "pt-BR", { sensitivity: "base" }));
 
   const totalGeral = LAST_BANCAS_RESUMO.reduce((s, r) => s + r.banca, 0);
   const lucroGeral = LAST_BANCAS_RESUMO.reduce((s, r) => s + (r.lucro || 0), 0);
@@ -1667,8 +1760,8 @@ function renderAll() {
   }
 
   document.getElementById("side-filtered").textContent =
-    [ACTIVE_TIPSTER, ACTIVE_MES ? formatMesLabel(ACTIVE_MES) : null].filter(Boolean).length
-      ? `Filtrado: ${[ACTIVE_TIPSTER, ACTIVE_MES ? formatMesLabel(ACTIVE_MES) : null].filter(Boolean).join(" · ")}`
+    [ACTIVE_TIPSTER, ACTIVE_CASA, ACTIVE_MES ? formatMesLabel(ACTIVE_MES) : null].filter(Boolean).length
+      ? `Filtrado: ${[ACTIVE_TIPSTER, ACTIVE_CASA, ACTIVE_MES ? formatMesLabel(ACTIVE_MES) : null].filter(Boolean).join(" · ")}`
       : "Todas as apostas";
   document.getElementById("chart-title").textContent =
     ACTIVE_TIPSTER ? `Resultado acumulado (${ACTIVE_TIPSTER})` : "Resultado acumulado";
@@ -1707,7 +1800,7 @@ function renderCasaSummary(bets) {
     SORT_STATE.casa,
     (l, k) => l[k]
   );
-  if (!SORT_STATE.casa.key) linhas.sort((a, b) => b.lucro - a.lucro);
+  if (!SORT_STATE.casa.key) linhas.sort((a, b) => a.casa.localeCompare(b.casa, "pt-BR", { sensitivity: "base" }));
 
   if (!linhas.length) {
     tbody.innerHTML = `<tr><td colspan="3">Sem apostas nesse filtro ainda.</td></tr>`;
@@ -1966,7 +2059,17 @@ function renderChart(resolvedBets) {
   });
 }
 
-document.getElementById("refresh-btn").addEventListener("click", () => loadData(true));
+document.getElementById("refresh-btn").addEventListener("click", async () => {
+  const btn = document.getElementById("refresh-btn");
+  btn.classList.add("spinning");
+  btn.disabled = true;
+  try {
+    await loadData(true);
+  } finally {
+    btn.classList.remove("spinning");
+    btn.disabled = false;
+  }
+});
 
 setupSortableHeaders(HIST_HEADERS, "hist", renderHistorico);
 setupSortableHeaders(RANK_HEADERS, "rank", renderRanking);
