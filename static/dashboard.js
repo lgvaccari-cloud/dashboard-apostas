@@ -19,6 +19,8 @@ let ACTIVE_MES = null;
 let ONLY_PENDING = false;
 let ONLY_TODAY = false;
 let ONLY_YESTERDAY = false;
+let ONLY_PENDING_TODAY = false;
+let ONLY_PENDING_FUTURE = false;
 let RANK_ONLY_TODAY = false;
 let RANK_ONLY_YESTERDAY = false;
 let AUTO_MES_APPLIED = false;
@@ -625,7 +627,9 @@ document.getElementById("nav-geral").addEventListener("click", () => switchView(
 document.getElementById("brand-home").addEventListener("click", () => switchView("geral"));
 document.getElementById("nav-historico").addEventListener("click", () => {
   ONLY_PENDING = false;
-  document.getElementById("filter-pendentes").classList.remove("active");
+  ONLY_PENDING_TODAY = false;
+  ONLY_PENDING_FUTURE = false;
+  clearQuickFilterChips();
   switchView("historico");
 });
 document.getElementById("nav-ranking").addEventListener("click", () => switchView("ranking"));
@@ -633,48 +637,69 @@ document.getElementById("nav-bancas").addEventListener("click", () => switchView
 document.getElementById("nav-config").addEventListener("click", () => switchView("config"));
 
 document.getElementById("card-aberto").addEventListener("click", () => {
+  // "Em aberto" mostra TODAS as pendentes (hoje + futuro misturadas) — pra
+  // ver só um lado, usa os chips "Pend. hoje"/"Pend. futuro" na Histórico.
   ONLY_PENDING = true;
   ONLY_TODAY = false;
   ONLY_YESTERDAY = false;
+  ONLY_PENDING_TODAY = false;
+  ONLY_PENDING_FUTURE = false;
   EDITING_IDX = null;
   switchView("historico");
-  document.getElementById("filter-pendentes").classList.add("active");
-  document.getElementById("filter-today").classList.remove("active");
-  document.getElementById("filter-yesterday").classList.remove("active");
+  clearQuickFilterChips();
 });
 
 document.getElementById("clear-pending-filter").addEventListener("click", () => {
   ONLY_PENDING = false;
-  document.getElementById("filter-pendentes").classList.remove("active");
+  ONLY_PENDING_TODAY = false;
+  ONLY_PENDING_FUTURE = false;
+  clearQuickFilterChips();
   renderHistorico();
 });
 
-document.getElementById("filter-today").addEventListener("click", () => {
-  ONLY_TODAY = !ONLY_TODAY;
-  if (ONLY_TODAY) { ONLY_YESTERDAY = false; ONLY_PENDING = false; }
-  document.getElementById("filter-today").classList.toggle("active", ONLY_TODAY);
-  document.getElementById("filter-yesterday").classList.remove("active");
-  document.getElementById("filter-pendentes").classList.remove("active");
-  renderHistorico();
-});
+// Chips "Hoje" / "Ontem" / "Pend. hoje" / "Pend. futuro" — mutuamente
+// exclusivos entre si (clicar num já ativo desliga; clicar noutro troca).
+const QUICK_FILTER_CHIPS = {
+  today: "filter-today",
+  yesterday: "filter-yesterday",
+  pendingToday: "filter-pending-today",
+  pendingFuture: "filter-pending-future",
+};
 
-document.getElementById("filter-yesterday").addEventListener("click", () => {
-  ONLY_YESTERDAY = !ONLY_YESTERDAY;
-  if (ONLY_YESTERDAY) { ONLY_TODAY = false; ONLY_PENDING = false; }
-  document.getElementById("filter-yesterday").classList.toggle("active", ONLY_YESTERDAY);
-  document.getElementById("filter-today").classList.remove("active");
-  document.getElementById("filter-pendentes").classList.remove("active");
-  renderHistorico();
-});
+function clearQuickFilterChips() {
+  Object.values(QUICK_FILTER_CHIPS).forEach(id => {
+    document.getElementById(id).classList.remove("active");
+  });
+}
 
-document.getElementById("filter-pendentes").addEventListener("click", () => {
-  ONLY_PENDING = !ONLY_PENDING;
-  if (ONLY_PENDING) { ONLY_TODAY = false; ONLY_YESTERDAY = false; }
-  document.getElementById("filter-pendentes").classList.toggle("active", ONLY_PENDING);
-  document.getElementById("filter-today").classList.remove("active");
-  document.getElementById("filter-yesterday").classList.remove("active");
+function toggleQuickFilter(which) {
+  const estavaAtivo =
+    (which === "today" && ONLY_TODAY) ||
+    (which === "yesterday" && ONLY_YESTERDAY) ||
+    (which === "pendingToday" && ONLY_PENDING_TODAY) ||
+    (which === "pendingFuture" && ONLY_PENDING_FUTURE);
+
+  ONLY_TODAY = false;
+  ONLY_YESTERDAY = false;
+  ONLY_PENDING = false;
+  ONLY_PENDING_TODAY = false;
+  ONLY_PENDING_FUTURE = false;
+  clearQuickFilterChips();
+
+  if (!estavaAtivo) {
+    if (which === "today") ONLY_TODAY = true;
+    else if (which === "yesterday") ONLY_YESTERDAY = true;
+    else if (which === "pendingToday") ONLY_PENDING_TODAY = true;
+    else if (which === "pendingFuture") ONLY_PENDING_FUTURE = true;
+    document.getElementById(QUICK_FILTER_CHIPS[which]).classList.add("active");
+  }
   renderHistorico();
-});
+}
+
+document.getElementById("filter-today").addEventListener("click", () => toggleQuickFilter("today"));
+document.getElementById("filter-yesterday").addEventListener("click", () => toggleQuickFilter("yesterday"));
+document.getElementById("filter-pending-today").addEventListener("click", () => toggleQuickFilter("pendingToday"));
+document.getElementById("filter-pending-future").addEventListener("click", () => toggleQuickFilter("pendingFuture"));
 
 document.getElementById("rank-filter-today").addEventListener("click", () => {
   RANK_ONLY_TODAY = !RANK_ONLY_TODAY;
@@ -868,7 +893,11 @@ function renderHistorico() {
   // inteiro visível, "mais cedo pra mais tarde" pularia de dia em dia sem
   // ajudar em nada. Se o filtro Hoje/Ontem foi desligado enquanto essa
   // ordenação estava ativa, volta pro padrão (mais recente primeiro).
-  if (SORT_STATE.hist.key === "data_hora_sort" && !ONLY_TODAY && !ONLY_YESTERDAY) {
+  // "Pend. futuro" pode ter mais de uma data (dias diferentes) — mas
+  // data_hora_sort já agrupa certo por data e depois por hora, então o botão
+  // continua fazendo sentido mesmo aí, não só quando é um único dia.
+  const filtroDeDataAtivo = ONLY_TODAY || ONLY_YESTERDAY || ONLY_PENDING_TODAY || ONLY_PENDING_FUTURE;
+  if (SORT_STATE.hist.key === "data_hora_sort" && !filtroDeDataAtivo) {
     SORT_STATE.hist = { key: null, dir: 1 };
   }
   if (SORT_STATE.hist.key) {
@@ -879,7 +908,15 @@ function renderHistorico() {
 
   CURRENT_HISTORICO_BETS = bets;
 
-  document.getElementById("pending-banner").style.display = ONLY_PENDING ? "flex" : "none";
+  const algumaPendenteAtiva = ONLY_PENDING || ONLY_PENDING_TODAY || ONLY_PENDING_FUTURE;
+  document.getElementById("pending-banner").style.display = algumaPendenteAtiva ? "flex" : "none";
+  if (algumaPendenteAtiva) {
+    document.getElementById("pending-banner-text").textContent = ONLY_PENDING_TODAY
+      ? "Mostrando só as apostas pendentes de hoje."
+      : ONLY_PENDING_FUTURE
+      ? "Mostrando só as apostas pendentes futuras."
+      : "Mostrando só as apostas pendentes.";
+  }
 
   renderBetsCards(bets);
 
@@ -1143,6 +1180,8 @@ function historicoBets() {
   if (ONLY_PENDING) result = result.filter(b => !isResolved(b));
   if (ONLY_TODAY) result = result.filter(b => b.data_iso === todayISO());
   if (ONLY_YESTERDAY) result = result.filter(b => b.data_iso === yesterdayISO());
+  if (ONLY_PENDING_TODAY) result = result.filter(b => !isResolved(b) && b.data_iso === todayISO());
+  if (ONLY_PENDING_FUTURE) result = result.filter(b => !isResolved(b) && b.data_iso && b.data_iso > todayISO());
   return result;
 }
 
@@ -2290,16 +2329,16 @@ setupSortableHeaders(HIST_HEADERS, "hist", renderHistorico);
 function syncSortByHorarioBtn() {
   const btn = document.getElementById("sort-by-horario-btn");
   if (!btn) return;
-  const disponivel = ONLY_TODAY || ONLY_YESTERDAY;
+  const disponivel = ONLY_TODAY || ONLY_YESTERDAY || ONLY_PENDING_TODAY || ONLY_PENDING_FUTURE;
   btn.disabled = !disponivel;
-  btn.title = disponivel ? "" : "Só funciona com o filtro Hoje ou Ontem ativado";
+  btn.title = disponivel ? "" : "Só funciona com Hoje, Ontem, Pend. hoje ou Pend. futuro ativado";
   const ativo = disponivel && SORT_STATE.hist.key === "data_hora_sort";
   btn.classList.toggle("active", ativo);
   const arrow = btn.querySelector(".sort-arrow");
   if (arrow) arrow.textContent = ativo ? (SORT_STATE.hist.dir === 1 ? "▲" : "▼") : "";
 }
 document.getElementById("sort-by-horario-btn").addEventListener("click", () => {
-  if (!(ONLY_TODAY || ONLY_YESTERDAY)) return;
+  if (!(ONLY_TODAY || ONLY_YESTERDAY || ONLY_PENDING_TODAY || ONLY_PENDING_FUTURE)) return;
   document.getElementById("th-hist-data").click();
 });
 setupSortableHeaders(RANK_HEADERS, "rank", renderRanking);
