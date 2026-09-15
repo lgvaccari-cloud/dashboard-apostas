@@ -653,6 +653,24 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   color: var(--text);
 }
 .bet-card-data { font-size: 13px; font-weight: 500; color: var(--muted); margin-left: 4px; }
+.bet-card-casa-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  vertical-align: middle;
+}
+.bet-card-casa-logo {
+  height: 22px;
+  max-width: 96px;
+  width: auto;
+  object-fit: contain;
+  vertical-align: middle;
+  display: block;
+}
 .bet-card-footer-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .bet-card-pl { font-weight: 700; font-size: 15px; white-space: nowrap; }
 .bet-card-pl.pending { color: var(--muted); font-weight: 600; font-size: 13px; }
