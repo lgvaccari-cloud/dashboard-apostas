@@ -213,7 +213,8 @@
           <span class="filters-label">Filtro rápido</span>
           <button class="chip" id="filter-today">Hoje</button>
           <button class="chip" id="filter-yesterday">Ontem</button>
-          <button class="chip" id="filter-pendentes">Pendentes</button>
+          <button class="chip" id="filter-pending-today">Pend. hoje</button>
+          <button class="chip" id="filter-pending-future">Pend. futuro</button>
           <button class="chip" id="sort-by-horario-btn">🕐 Por horário<span class="sort-arrow"></span></button>
           <div class="hist-view-toggle">
             <button class="toggle-btn active" id="hist-view-cards-btn">Cards</button>
@@ -221,7 +222,7 @@
           </div>
         </div>
         <div class="pending-banner" id="pending-banner">
-          Mostrando só as apostas pendentes.
+          <span id="pending-banner-text">Mostrando só as apostas pendentes.</span>
           <button id="clear-pending-filter" class="clear-link" style="display:inline">Ver todas</button>
         </div>
         <div class="bets-cards-grid" id="bets-cards-grid"></div>
