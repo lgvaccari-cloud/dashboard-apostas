@@ -340,6 +340,30 @@ def update_bet(mes, row, updates):
     _cache["bets"] = None  # invalida o cache — a próxima leitura completa busca de novo
 
 
+def delete_bet(mes, row):
+    """"Exclui" uma aposta limpando os campos editáveis da linha (Data até
+    Odd) — deixa a linha em branco, sem apagar a linha de verdade, pra não
+    bagunçar as fórmulas nem a numeração das linhas abaixo."""
+    client = _get_client()
+    sheet_id = os.environ["SHEET_ID"]
+    sh = client.open_by_key(sheet_id)
+    ws = sh.worksheet(mes)
+
+    rows = ws.get_all_values()
+    _, data_col = _find_table_start(rows)
+    if data_col is None:
+        raise RuntimeError(f"Não encontrei a tabela de apostas na aba '{mes}'.")
+
+    primeiro_col = data_col + 1  # Data (1-based)
+    ultimo_col = data_col + len(EDITABLE_FIELDS)  # até Odd
+    start_a1 = gspread.utils.rowcol_to_a1(row, primeiro_col)
+    end_a1 = gspread.utils.rowcol_to_a1(row, ultimo_col)
+    linha_em_branco = [[""] * (ultimo_col - primeiro_col + 1)]
+    ws.update(range_name=f"{start_a1}:{end_a1}", values=linha_em_branco, value_input_option="USER_ENTERED")
+
+    _cache["bets"] = None
+
+
 def add_bet(mes, fields):
     """Adiciona uma aposta nova na aba `mes`, na primeira linha vazia depois
     da última aposta existente.

@@ -3,7 +3,7 @@ from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 import requests
 
-from sheets import fetch_bets, fetch_bets_for_mes, update_bet, add_bet, fetch_bancas_for_mes, update_banca
+from sheets import fetch_bets, fetch_bets_for_mes, update_bet, add_bet, fetch_bancas_for_mes, update_banca, delete_bet
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "troque-essa-chave-em-producao")
@@ -141,6 +141,20 @@ def api_update_banca():
         row = int(payload["row"])
         valor = payload["valor"]
         update_banca(mes, row, valor)
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/delete_bet", methods=["POST"])
+@login_required
+def api_delete_bet():
+    """Exclui (limpa) uma aposta lançada errada/duplicada."""
+    try:
+        payload = request.get_json(force=True)
+        mes = payload["mes"]
+        row = int(payload["row"])
+        delete_bet(mes, row)
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
