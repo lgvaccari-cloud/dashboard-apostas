@@ -408,7 +408,8 @@
           <label>Mês
             <select id="new-bet-print-mes"></select>
           </label>
-          <label>Data <span class="label-hint">(deixe em branco pra hoje)</span>
+          <label>
+            <span class="label-title">Data <span class="label-hint">(deixe em branco pra hoje)</span></span>
             <input type="text" id="new-bet-print-data" placeholder="dd/mm/aaaa">
           </label>
           <label class="modal-span-2">Print da aposta
@@ -418,9 +419,10 @@
             📋 Ou clica aqui e cola uma imagem copiada (Ctrl+V)
             <div id="new-bet-paste-preview"></div>
           </div>
-          <label class="modal-span-2">Legenda (opcional — nome do tipster, "somar", "duplicar"...)
+          <label class="modal-span-2">Tipster
             <input type="text" id="new-bet-print-caption" placeholder="Ex: Jarvis Pré">
           </label>
+          <div class="modal-span-2 print-tipster-chips" id="print-tipster-chips"></div>
         </div>
         <div class="print-loading-bar" id="print-loading-bar" style="display:none"><div class="print-loading-bar-fill"></div></div>
         <div id="new-bet-print-feedback"></div>
