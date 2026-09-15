@@ -130,6 +130,13 @@ function fmtDual(nUni, nReais, sign) {
 const CASA_LOGO_BG = {
   "bet365": "#027b5b",
   "betbra": "#1d1d1d",
+  "superbet": "#ff0000",
+  "betano": "#ff3c00",
+  "betboo": "#c93b19",
+  "sportingbet": "#265b8a",
+  "1win": "#141415",
+  "pinnacle": "#1f273d",
+  "bolsa": "#000105",
 };
 
 function slugCasa(casa) {
