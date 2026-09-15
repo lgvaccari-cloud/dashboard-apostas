@@ -36,6 +36,36 @@ function formatMesLabel(mes) {
   return mes.charAt(0).toUpperCase() + mes.slice(1).toLowerCase();
 }
 
+// ---------- Ordenação cronológica dos meses ----------
+function stripAcentos(s) {
+  return String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+const MES_INDEX = {};
+MESES_PT.forEach((nome, i) => { MES_INDEX[stripAcentos(nome)] = i; });
+
+// "Setembro/2026" -> número comparável (ano*12 + índice do mês). null se não der pra ler.
+function mesSortKey(mes) {
+  const partes = String(mes).toLowerCase().trim().split("/");
+  const nome = stripAcentos(partes[0].trim());
+  const ano = parseInt(partes[1], 10);
+  const idx = MES_INDEX[nome];
+  if (idx === undefined || isNaN(ano)) return null;
+  return ano * 12 + idx;
+}
+
+// Mais recente primeiro. Meses que não derem pra interpretar vão pro fim, na ordem original.
+function sortMeses(meses) {
+  return [...meses].sort((a, b) => {
+    const ka = mesSortKey(a);
+    const kb = mesSortKey(b);
+    if (ka === null && kb === null) return 0;
+    if (ka === null) return 1;
+    if (kb === null) return -1;
+    return kb - ka;
+  });
+}
+
 function todayISO() {
   const d = new Date();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -276,9 +306,22 @@ function renderChips() {
   bar.style.display = "";
 
   const betsDoMes = ALL_BETS.filter(b => b.mes === ACTIVE_MES);
-  const tipsters = [...new Set(betsDoMes.map(b => b.tipster).filter(Boolean))].sort();
+  const tipsters = [...new Set(betsDoMes.map(b => b.tipster).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
   const container = document.getElementById("tipster-chips");
   container.innerHTML = "";
+
+  const chipTodos = document.createElement("button");
+  chipTodos.className = "chip chip-all" + (ACTIVE_TIPSTER ? "" : " active");
+  chipTodos.textContent = "Todos";
+  chipTodos.onclick = () => {
+    if (!ACTIVE_TIPSTER) return;
+    ACTIVE_TIPSTER = null;
+    renderChips();
+    renderAll();
+  };
+  container.appendChild(chipTodos);
+
   tipsters.forEach(t => {
     const chip = document.createElement("button");
     chip.className = "chip" + (ACTIVE_TIPSTER === t ? " active" : "");
@@ -290,8 +333,6 @@ function renderChips() {
     };
     container.appendChild(chip);
   });
-  document.getElementById("clear-filters").style.display = ACTIVE_TIPSTER ? "inline" : "none";
-
   const select = document.getElementById("tipster-select");
   select.innerHTML = `<option value="">Todos os tipsters</option>` +
     tipsters.map(t => `<option value="${esc(t)}" ${ACTIVE_TIPSTER === t ? "selected" : ""}>${esc(t)}</option>`).join("");
@@ -303,18 +344,26 @@ document.getElementById("tipster-select").addEventListener("change", (e) => {
   renderAll();
 });
 
-document.getElementById("clear-filters").addEventListener("click", () => {
-  ACTIVE_TIPSTER = null;
-  renderChips();
-  renderAll();
-});
-
 // ---------- Chips de mês ----------
 function renderMesChips() {
-  // mantém a ordem em que os meses aparecem na planilha (ordem das abas)
-  const meses = [...new Set(ALL_BETS.map(b => b.mes).filter(Boolean))];
+  // ordem cronológica, do mês mais recente pro mais antigo
+  const meses = sortMeses([...new Set(ALL_BETS.map(b => b.mes).filter(Boolean))]);
   const container = document.getElementById("mes-chips");
   container.innerHTML = "";
+
+  const chipTodos = document.createElement("button");
+  chipTodos.className = "chip chip-all" + (ACTIVE_MES ? "" : " active");
+  chipTodos.textContent = "Todos";
+  chipTodos.onclick = () => {
+    if (!ACTIVE_MES) return;
+    ACTIVE_MES = null;
+    ACTIVE_TIPSTER = null;
+    renderMesChips();
+    renderChips();
+    renderAll();
+  };
+  container.appendChild(chipTodos);
+
   meses.forEach(m => {
     const chip = document.createElement("button");
     chip.className = "chip" + (ACTIVE_MES === m ? " active" : "");
@@ -328,7 +377,6 @@ function renderMesChips() {
     };
     container.appendChild(chip);
   });
-  document.getElementById("clear-mes").style.display = ACTIVE_MES ? "inline" : "none";
 
   const select = document.getElementById("mes-select");
   select.innerHTML = `<option value="">Todos os meses</option>` +
@@ -337,14 +385,6 @@ function renderMesChips() {
 
 document.getElementById("mes-select").addEventListener("change", (e) => {
   ACTIVE_MES = e.target.value || null;
-  ACTIVE_TIPSTER = null;
-  renderMesChips();
-  renderChips();
-  renderAll();
-});
-
-document.getElementById("clear-mes").addEventListener("click", () => {
-  ACTIVE_MES = null;
   ACTIVE_TIPSTER = null;
   renderMesChips();
   renderChips();
@@ -905,7 +945,7 @@ function historicoBets() {
 
 // ---------- Modal "Nova aposta" ----------
 function populateNewBetMesOptions() {
-  const meses = [...new Set(ALL_BETS.map(b => b.mes).filter(Boolean))];
+  const meses = sortMeses([...new Set(ALL_BETS.map(b => b.mes).filter(Boolean))]);
   const optionsHtml = meses.map(m => `<option value="${esc(m)}">${esc(formatMesLabel(m))}</option>`).join("");
 
   [document.getElementById("new-bet-mes"), document.getElementById("new-bet-print-mes")].forEach(select => {
