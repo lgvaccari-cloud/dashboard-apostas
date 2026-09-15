@@ -1,5 +1,6 @@
 import os
 import json
+import re
 import time
 from datetime import datetime
 import gspread
@@ -15,11 +16,11 @@ SCOPES = [
 _CACHE_TTL_SEGUNDOS = 20
 _cache = {"bets": None, "ts": 0}
 
-# Nomes das colunas na ordem exata da planilha (A -> N)
+# Nomes das colunas na ordem exata da planilha (A -> O)
 COLUMNS = [
     "data", "casa", "tipster", "aposta", "tipo", "mercado",
     "resultado", "stake", "odd", "aposta_reais", "lucro", "uni",
-    "bank", "cresc_pct",
+    "bank", "cresc_pct", "horario",
 ]
 
 # Campos que podem ser editados pelo dashboard. Os demais (aposta_reais,
@@ -27,7 +28,7 @@ COLUMNS = [
 # nunca devem ser sobrescritos.
 EDITABLE_FIELDS = {
     "data", "casa", "tipster", "aposta", "tipo", "mercado", "resultado",
-    "stake", "odd",
+    "stake", "odd", "horario",
 }
 
 
@@ -137,6 +138,21 @@ def _raw_cell(raw_rows, row_idx, col_idx):
 _CAMPOS_PRECISOS = {"stake", "odd", "uni", "aposta_reais", "lucro"}
 
 
+def _normaliza_horario_sort(horario: str) -> str:
+    """Extrai "HH:MM" com zero à esquerda pra poder ordenar como texto — aceita
+    o que a pessoa digitar na mão ("9:5", "19:45", "19:45:00", "9h30").
+    Não reconhecendo nada, devolve "00:00" (fica no início do dia, neutro)."""
+    if not horario:
+        return "00:00"
+    m = re.search(r"(\d{1,2})[:h](\d{1,2})", horario)
+    if not m:
+        return "00:00"
+    h, mi = int(m.group(1)), int(m.group(2))
+    if not (0 <= h <= 23 and 0 <= mi <= 59):
+        return "00:00"
+    return f"{h:02d}:{mi:02d}"
+
+
 def _parse_bets_from_rows(rows, mes_label, raw_rows=None):
     """Extrai as apostas de uma aba já lida (rows), marcando cada aposta com
     o nome da aba de origem (mes_label) e a linha absoluta na planilha (pra
@@ -189,6 +205,11 @@ def _parse_bets_from_rows(rows, mes_label, raw_rows=None):
             "lucro_uni": _to_float(record["uni"]),
             "stake_reais": _to_float(record["aposta_reais"]),
             "lucro_reais": _to_float(record["lucro"]),
+            "horario": record["horario"].strip(),
+            # combina data+hora numa string ordenável ("2026-09-15T19:45") —
+            # é isso que a lista usa pra ordenar certinho dentro do mesmo dia
+            "data_hora_sort": (parsed_date.isoformat() if parsed_date else "0000-00-00")
+                + "T" + _normaliza_horario_sort(record["horario"].strip()),
         }
         bets.append(bet)
 
@@ -459,13 +480,14 @@ def add_bet(mes, fields):
     da última aposta existente.
 
     Só preenche os campos até Odd (Data, Casa, Tipster, Aposta, Tipo,
-    Mercado, Resultado, Stake, Odd) — as colunas de fórmula (Aposta R$,
-    Lucro, Uni, Bank, Cresc%) devem já estar prontas na planilha (copiadas
-    pra baixo com antecedência), do mesmo jeito que o bot do Telegram
-    também só preenche até a Odd.
+    Mercado, Resultado, Stake, Odd) numa tacada só — as colunas de fórmula
+    (Aposta R$, Lucro, Uni, Bank, Cresc%) devem já estar prontas na planilha
+    (copiadas pra baixo com antecedência), do mesmo jeito que o bot do
+    Telegram também só preenche até a Odd. "horario", se vier preenchido,
+    é escrito à parte (mora no fim da tabela, depois das colunas de fórmula).
 
-    `fields` é um dict com as chaves: data, casa, tipster, aposta, tipo,
-    mercado, resultado, stake, odd.
+    `fields` é um dict com as chaves: data, horario, casa, tipster, aposta,
+    tipo, mercado, resultado, stake, odd.
     """
     client = _get_client()
     sheet_id = os.environ["SHEET_ID"]
@@ -492,6 +514,13 @@ def add_bet(mes, fields):
     start_a1 = gspread.utils.rowcol_to_a1(next_row, data_col + 1)
     end_a1 = gspread.utils.rowcol_to_a1(next_row, data_col + len(order))
     ws.update(range_name=f"{start_a1}:{end_a1}", values=values, value_input_option="USER_ENTERED")
+
+    # "horario" não é vizinho de Data..Odd (mora no fim da tabela, depois das
+    # colunas de fórmula), então escreve numa célula separada.
+    if fields.get("horario"):
+        col_horario = data_col + COLUMNS.index("horario") + 1  # 1-based
+        cell_a1 = gspread.utils.rowcol_to_a1(next_row, col_horario)
+        ws.update(range_name=cell_a1, values=[[fields["horario"]]], value_input_option="USER_ENTERED")
 
     _cache["bets"] = None
     return next_row
