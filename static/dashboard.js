@@ -21,7 +21,7 @@ let RANK_ONLY_YESTERDAY = false;
 let AUTO_MES_APPLIED = false;
 let chartInstance = null;
 let CURRENT_VIEW = "geral";
-let SHOW_BRL = false;
+let SHOW_BRL = true;
 let EDITING_IDX = null;
 let CURRENT_HISTORICO_BETS = [];
 
@@ -175,6 +175,42 @@ function renderThemeGrid() {
   `;
   lightGrid.innerHTML = THEMES.filter(t => t.group === "light").map(buildSwatch).join("");
   darkGrid.innerHTML = THEMES.filter(t => t.group === "dark").map(buildSwatch).join("");
+}
+
+// ---------- Fontes ----------
+const FONTS = [
+  { id: "montserrat", label: "Montserrat", stack: `"Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif` },
+  { id: "inter", label: "Inter", stack: `"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif` },
+  { id: "work-sans", label: "Work Sans", stack: `"Work Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif` },
+  { id: "ibm-plex-sans", label: "IBM Plex Sans", stack: `"IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif` },
+  { id: "source-sans-3", label: "Source Sans 3", stack: `"Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif` },
+  { id: "dm-sans", label: "DM Sans", stack: `"DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif` },
+  { id: "manrope", label: "Manrope", stack: `"Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif` },
+  { id: "outfit", label: "Outfit", stack: `"Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif` },
+  { id: "sora", label: "Sora", stack: `"Sora", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif` },
+  { id: "space-grotesk", label: "Space Grotesk", stack: `"Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif` },
+];
+
+let CURRENT_FONT = "montserrat";
+
+function applyFont(fontId) {
+  const font = FONTS.find(f => f.id === fontId) || FONTS[0];
+  CURRENT_FONT = font.id;
+  document.documentElement.style.setProperty("--font-family", font.stack);
+  try { localStorage.setItem("painel_font", font.id); } catch (e) {}
+  renderFontGrid();
+  if (ALL_BETS.length && chartInstance) renderAll(); // redesenha o gráfico com a fonte certa
+}
+
+function renderFontGrid() {
+  const grid = document.getElementById("font-grid");
+  if (!grid) return;
+  grid.innerHTML = FONTS.map(f => `
+    <button class="theme-swatch ${f.id === CURRENT_FONT ? "active" : ""}" onclick="applyFont('${f.id}')">
+      <div class="theme-swatch-preview font-swatch-preview" style="font-family:${f.stack}">Aa</div>
+      <div class="theme-swatch-name">${f.label}</div>
+    </button>
+  `).join("");
 }
 
 // ---------- Unidades / Reais ----------
@@ -379,7 +415,7 @@ function switchView(view) {
   if (view === "historico") renderHistorico();
   if (view === "ranking") renderRanking();
   if (view === "bancas") loadBancas();
-  if (view === "config") renderThemeGrid();
+  if (view === "config") { renderThemeGrid(); renderFontGrid(); }
 }
 
 document.getElementById("nav-geral").addEventListener("click", () => switchView("geral"));
@@ -872,7 +908,9 @@ function openNewBetModal() {
   PASTED_IMAGE = null;
   document.getElementById("new-bet-paste-preview").innerHTML = "";
   document.getElementById("new-bet-paste-zone").classList.remove("has-image");
-  setNewBetMode("manual");
+  document.getElementById("print-loading-bar").style.display = "none";
+  document.getElementById("new-bet-print-send").disabled = false;
+  setNewBetMode("print");
   document.getElementById("new-bet-overlay").style.display = "flex";
 }
 
@@ -963,15 +1001,29 @@ function setPrintFeedback(html, cls) {
   el.className = cls || "";
 }
 
+function showPrintLoading(show) {
+  document.getElementById("print-loading-bar").style.display = show ? "block" : "none";
+}
+
 function handlePrintResult(result, mes) {
+  showPrintLoading(false);
+  const sendBtn = document.getElementById("new-bet-print-send");
+
   if (result.status === "ok") {
-    setPrintFeedback((result.linhas || []).join("<br>"));
-    setTimeout(() => refreshMes(mes), 900);
+    setPrintFeedback("✅ " + (result.linhas || []).join("<br>✅ "));
+    sendBtn.disabled = true;
+    setTimeout(() => {
+      refreshMes(mes);
+      closeNewBetModal();
+    }, 1600);
   } else if (result.status === "no_bets_found") {
+    sendBtn.disabled = false;
     setPrintFeedback("Não consegui identificar nenhuma aposta nesse print. Tenta um print mais nítido.", "error");
   } else if (result.status === "waiting_somar") {
+    sendBtn.disabled = false;
     setPrintFeedback(result.message);
   } else if (result.status === "ambiguous_casa") {
+    sendBtn.disabled = false;
     const botoes = result.options.map(op =>
       `<button type="button" data-casa="${esc(op)}">${esc(op)}</button>`
     ).join("");
@@ -980,7 +1032,8 @@ function handlePrintResult(result, mes) {
     );
     document.querySelectorAll("#new-bet-print-feedback .casa-choice-buttons button").forEach(btn => {
       btn.addEventListener("click", async () => {
-        setPrintFeedback("Registrando...", "loading");
+        setPrintFeedback("");
+        showPrintLoading(true);
         try {
           const res = await fetch("/api/resolve_casa_image", {
             method: "POST",
@@ -990,11 +1043,13 @@ function handlePrintResult(result, mes) {
           const data = await res.json();
           handlePrintResult(data, mes);
         } catch (err) {
+          showPrintLoading(false);
           setPrintFeedback("Não consegui registrar: " + err.message, "error");
         }
       });
     });
   } else {
+    sendBtn.disabled = false;
     setPrintFeedback(result.message || "Deu erro ao processar o print.", "error");
   }
 }
@@ -1008,7 +1063,10 @@ document.getElementById("new-bet-print-send").addEventListener("click", async ()
   if (!mes) { alert("Escolha um mês."); return; }
   if (!imagemParaEnviar) { alert("Escolhe o print da aposta (ou cola com Ctrl+V)."); return; }
 
-  setPrintFeedback("Recebi o print, analisando... 🔎", "loading");
+  const sendBtn = document.getElementById("new-bet-print-send");
+  sendBtn.disabled = true;
+  setPrintFeedback("");
+  showPrintLoading(true);
 
   const formData = new FormData();
   formData.append("image", imagemParaEnviar, imagemParaEnviar.name || "print.png");
@@ -1020,6 +1078,8 @@ document.getElementById("new-bet-print-send").addEventListener("click", async ()
     const data = await res.json();
     handlePrintResult(data, mes);
   } catch (err) {
+    showPrintLoading(false);
+    sendBtn.disabled = false;
     setPrintFeedback("Não consegui enviar o print: " + err.message, "error");
   }
 });
@@ -1417,7 +1477,8 @@ function renderChart(resolvedBets) {
       const dataset = chart.data.datasets[0];
       const c = chart.ctx;
       c.save();
-      c.font = "bold 11px Montserrat, sans-serif";
+      const fonteAtual = getComputedStyle(document.body).getPropertyValue("--font-family") || "Montserrat, sans-serif";
+      c.font = `bold 11px ${fonteAtual}`;
       c.textAlign = "center";
       meta.data.forEach((bar, i) => {
         const value = dataset.data[i];
@@ -1514,6 +1575,12 @@ try {
 } catch (e) {
   applyTheme("light-default");
 }
+
+// aplica a fonte salva
+try {
+  const fonteSalva = localStorage.getItem("painel_font");
+  if (fonteSalva) applyFont(fonteSalva);
+} catch (e) {}
 
 setToday();
 loadData();

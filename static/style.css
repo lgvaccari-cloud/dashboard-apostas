@@ -11,7 +11,8 @@
   --red-bg: #fbe9e7;
   --accent: #6fa72e;
   --radius: 14px;
-  font-family: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-family);
 }
 
 /* ---------- Temas ----------
@@ -772,6 +773,34 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
 .theme-swatch-preview .accent-dot { width: 16px; height: 16px; border-radius: 50%; }
 .theme-swatch-name { font-size: 12.5px; font-weight: 600; color: var(--text); }
 .theme-swatch.active .theme-swatch-name { color: var(--accent); font-weight: 700; }
+
+.font-swatch-preview {
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.print-loading-bar {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+  margin-top: 14px;
+}
+.print-loading-bar-fill {
+  height: 100%;
+  width: 40%;
+  border-radius: 999px;
+  background: var(--accent);
+  animation: print-loading-slide 1.1s ease-in-out infinite;
+}
+@keyframes print-loading-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
 .card-clickable { cursor: pointer; }
 .card-clickable:hover { filter: brightness(0.97); }
 
