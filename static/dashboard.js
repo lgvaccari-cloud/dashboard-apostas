@@ -133,7 +133,7 @@ const CASA_LOGO_BG = {
   "superbet": "#ff0000",
   "betano": "#ff3c00",
   "betboo": "#c93b19",
-  "sportingbet": "#265b8a",
+  "sportingbet": "#249ad7",
   "1win": "#141415",
   "pinnacle": "#1f273d",
   "bolsa": "#000105",
@@ -844,7 +844,7 @@ function renderHistorico() {
     return `
       <tr>
         <td data-label="Data">${b.data || "—"}</td>
-        <td data-label="Casa">${b.casa || "—"}</td>
+        <td data-label="Casa">${casaBadgeHtml(b.casa)}</td>
         <td data-label="Tipster">${b.tipster || "—"}</td>
         <td data-label="Aposta">${b.aposta || "—"}</td>
         <td data-label="Stake">${b.stake ? fmtDual(b.stake, b.stake_reais, false) : "—"}</td>
