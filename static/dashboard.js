@@ -1207,6 +1207,7 @@ function openNewBetModal() {
   syncFromUnits("new-bet-stake", "new-bet-stake-reais");
   document.getElementById("new-bet-resultado").value = "";
   document.getElementById("new-bet-print-file").value = "";
+  document.getElementById("new-bet-print-data").value = "";
   document.getElementById("new-bet-print-caption").value = "";
   document.getElementById("new-bet-print-feedback").innerHTML = "";
   document.getElementById("new-bet-print-feedback").className = "";
@@ -1432,6 +1433,7 @@ function renderHorarioPendenteForm(mes, pendentes, linhasHtml) {
 
 document.getElementById("new-bet-print-send").addEventListener("click", async () => {
   const mes = document.getElementById("new-bet-print-mes").value;
+  const dataAposta = document.getElementById("new-bet-print-data").value.trim();
   const fileInput = document.getElementById("new-bet-print-file");
   const caption = document.getElementById("new-bet-print-caption").value;
   const imagemParaEnviar = fileInput.files.length ? fileInput.files[0] : PASTED_IMAGE;
@@ -1448,6 +1450,7 @@ document.getElementById("new-bet-print-send").addEventListener("click", async ()
   formData.append("image", imagemParaEnviar, imagemParaEnviar.name || "print.png");
   formData.append("mes", mes);
   formData.append("caption", caption);
+  formData.append("data", dataAposta);
 
   try {
     const res = await fetch("/api/add_bet_from_image", { method: "POST", body: formData });

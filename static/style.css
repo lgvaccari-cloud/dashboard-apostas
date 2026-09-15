@@ -1406,3 +1406,10 @@ th.col-center, td.col-center { text-align: center !important; }
   cursor: not-allowed;
 }
 .chip:disabled:hover { border-color: var(--border); }
+
+/* Texto pequeno de ajuda dentro do label de um campo (ex: "deixe em branco pra hoje") */
+.label-hint {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 11px;
+}
