@@ -44,7 +44,11 @@ def _get_client():
 
 
 def _to_float(value):
-    """Converte valores no formato brasileiro (1.234,56 ou 1,25) para float."""
+    """Converte valores no formato brasileiro (1.234,56 ou 1,25) para float.
+
+    Aceita as variações que o Google Sheets devolve como texto, incluindo
+    "-R$ 1.875,00", "R$ -1.875,00" e "(R$ 1.875,00)" — todas negativas.
+    """
     if value is None:
         return 0.0
     if isinstance(value, (int, float)):
@@ -52,13 +56,19 @@ def _to_float(value):
     s = str(value).strip()
     if s == "" or s == "-":
         return 0.0
-    s = s.replace("R$", "").strip()
+    # tira símbolo de moeda e qualquer espaço (inclusive o não-quebrável do Sheets)
+    s = s.replace("R$", "").replace("\u00a0", "").replace(" ", "")
+    negativo = False
+    if s.startswith("(") and s.endswith(")"):
+        negativo = True
+        s = s[1:-1]
     # remove separador de milhar e troca vírgula decimal por ponto
     s = s.replace(".", "").replace(",", ".")
     try:
-        return float(s)
+        numero = float(s)
     except ValueError:
         return 0.0
+    return -numero if negativo else numero
 
 
 def _parse_date(value):
@@ -218,6 +228,14 @@ def _find_bancas_table(rows):
             }
             if "nome" in lower:
                 cols["nome"] = lower.index("nome")
+            # "final" casa exato — não confunde com "total final"
+            if "final" in lower:
+                cols["final"] = lower.index("final")
+            # coluna de lucro em reais — ignora a de unidades ("Lucro (u)")
+            for i, cabecalho in enumerate(lower):
+                if cabecalho.startswith("lucro") and "(u)" not in cabecalho:
+                    cols["lucro"] = i
+                    break
             return row_idx + 1, cols
     return None, None
 
@@ -226,8 +244,10 @@ def fetch_bancas_for_mes(mes):
     """Lê a tabela de contas/bancas por casa de apostas dentro da aba `mes`.
 
     Devolve um dict com:
-      - "resumo": [{"casa", "banca", "contas"}] — soma do "Total Banca" das
-        contas com Status "Ativa", agrupado por Casa, da maior pra menor.
+      - "resumo": [{"casa", "banca", "contas", "lucro"}] — por Casa: soma do
+        "Total Banca" e contagem apenas das contas com Status "Ativa", mais a
+        soma do "Lucro (BRL)" de TODAS as contas (ativas e finalizadas).
+        Casas que só têm conta finalizada aparecem com banca 0.
       - "contas": [{"casa", "nome", "banca", "row"}] — cada conta ativa
         individualmente, com o número da linha na planilha (pra editar).
 
@@ -247,36 +267,64 @@ def fetch_bancas_for_mes(mes):
     col_status = cols["status"]
     col_banca = cols["total_banca"]
     col_nome = cols.get("nome")
-    max_col = max(v for v in cols.values())
+    col_lucro = cols.get("lucro")
+    col_final = cols.get("final")
+
+    def cell(row, idx):
+        if idx is None or idx >= len(row):
+            return ""
+        return row[idx].strip()
 
     contas = []
-    for i, row in enumerate(rows[data_start_row:]):
-        if len(row) <= max_col:
-            continue
-        casa = row[col_casa].strip()
-        status = row[col_status].strip().lower()
-        if not casa or status != "ativa":
-            continue
-        valor = _to_float(row[col_banca])
-        nome = row[col_nome].strip() if col_nome is not None and len(row) > col_nome else ""
-        sheet_row = data_start_row + i + 1
-        contas.append({"casa": casa, "nome": nome, "banca": valor, "row": sheet_row})
-
     somas = {}
     qtd = {}
-    for c in contas:
-        somas[c["casa"]] = somas.get(c["casa"], 0.0) + c["banca"]
-        qtd[c["casa"]] = qtd.get(c["casa"], 0) + 1
+    lucros = {}
 
-    resumo = [{"casa": casa, "banca": somas[casa], "contas": qtd[casa]} for casa in somas]
-    resumo.sort(key=lambda x: x["banca"], reverse=True)
+    for i, row in enumerate(rows[data_start_row:]):
+        casa = cell(row, col_casa)
+        if not casa:
+            continue
+        sheet_row = data_start_row + i + 1
+
+        # a casa entra no resumo mesmo sem nenhuma conta ativa
+        somas.setdefault(casa, 0.0)
+        qtd.setdefault(casa, 0)
+        lucros.setdefault(casa, 0.0)
+
+        # lucro soma TODAS as contas da casa (ativas e finalizadas)
+        if col_lucro is not None:
+            lucros[casa] += _to_float(cell(row, col_lucro))
+
+        # banca e contagem de contas continuam só com as ativas
+        if cell(row, col_status).lower() != "ativa":
+            continue
+        valor = _to_float(cell(row, col_banca))
+        somas[casa] += valor
+        qtd[casa] += 1
+        contas.append({
+            "casa": casa,
+            "nome": cell(row, col_nome),
+            "banca": valor,
+            "final": _to_float(cell(row, col_final)),
+            "row": sheet_row,
+        })
+
+    resumo = [
+        {"casa": casa, "banca": somas[casa], "contas": qtd[casa], "lucro": lucros[casa]}
+        for casa in somas
+    ]
+    resumo.sort(key=lambda x: (x["banca"], x["lucro"]), reverse=True)
 
     return {"resumo": resumo, "contas": contas}
 
 
 def update_banca(mes, row, valor):
-    """Atualiza o valor de "Total Banca" de uma conta específica (linha) na
-    tabela de contas/bancas dessa aba."""
+    """Atualiza o valor de "Final" (saldo atual da conta) de uma conta
+    específica (linha) na tabela de contas/bancas dessa aba.
+
+    "Total Banca" NÃO é editada aqui — "Final" é o saldo que alimenta o
+    cálculo de Lucro na planilha.
+    """
     client = _get_client()
     sheet_id = os.environ["SHEET_ID"]
     sh = client.open_by_key(sheet_id)
@@ -286,8 +334,12 @@ def update_banca(mes, row, valor):
     _, cols = _find_bancas_table(rows)
     if cols is None:
         raise RuntimeError(f"Não encontrei a tabela de bancas na aba '{mes}'.")
+    if "final" not in cols:
+        raise RuntimeError(
+            f"Não encontrei a coluna 'Final' na tabela de bancas da aba '{mes}'."
+        )
 
-    col_num = cols["total_banca"] + 1  # 1-based
+    col_num = cols["final"] + 1  # 1-based
     cell_a1 = gspread.utils.rowcol_to_a1(row, col_num)
     ws.update(range_name=cell_a1, values=[[valor]], value_input_option="USER_ENTERED")
     _cache["bets"] = None
