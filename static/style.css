@@ -551,7 +551,6 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 14px;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -562,6 +561,7 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   gap: 12px;
   padding: 13px 16px;
   background: var(--sidebar-bg);
+  border-radius: 13px 13px 0 0;
 }
 .bet-card-title {
   font-size: 14.5px;

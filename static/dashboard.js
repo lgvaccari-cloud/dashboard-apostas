@@ -809,7 +809,6 @@ function resultBadgeLabel(resultado) {
 }
 
 function editFromCard(idx) {
-  setHistViewMode("table");
   startEdit(idx);
 }
 
@@ -823,6 +822,39 @@ function renderBetsCards(bets) {
   }
 
   grid.innerHTML = bets.map((b, idx) => {
+    if (EDITING_IDX === idx) {
+      return `
+        <div class="bet-card bet-card-editing">
+          <div class="bet-card-header">
+            <input class="edit-input small" id="edit-stake-${idx}" value="${esc(b.stake ? b.stake.toFixed(4).replace(".", ",") : "")}" placeholder="Stake">
+            <input class="edit-input" id="edit-tipster-${idx}" value="${esc(b.tipster)}" placeholder="Tipster" style="flex:1;">
+          </div>
+          <div class="bet-card-body">
+            <input class="edit-input" id="edit-aposta-${idx}" value="${esc(b.aposta)}" placeholder="Jogo - Aposta" style="margin-bottom:8px; width:100%;">
+            <div style="display:flex; gap:8px;">
+              <input class="edit-input small" id="edit-odd-${idx}" value="${esc(b.odd ? b.odd.toFixed(3).replace(".", ",") : "")}" placeholder="Odd">
+              <select class="edit-input" id="edit-resultado-${idx}">
+                <option value="" ${!b.resultado ? "selected" : ""}>Pendente</option>
+                <option value="Green" ${b.resultado === "Green" ? "selected" : ""}>Green</option>
+                <option value="Red" ${b.resultado === "Red" ? "selected" : ""}>Red</option>
+                <option value="Void" ${b.resultado === "Void" ? "selected" : ""}>Void</option>
+              </select>
+            </div>
+          </div>
+          <div class="bet-card-footer">
+            <div style="display:flex; gap:8px; flex:1;">
+              <input class="edit-input" id="edit-casa-${idx}" value="${esc(b.casa)}" placeholder="Casa" style="flex:1;">
+              <input class="edit-input small" id="edit-data-${idx}" value="${esc(b.data)}" placeholder="Data">
+            </div>
+            <div class="row-actions">
+              <button class="row-action-btn save" title="Salvar" onclick="saveEdit(${idx})">✓</button>
+              <button class="row-action-btn cancel" title="Cancelar" onclick="cancelEdit()">✕</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     const { jogo, resto } = splitJogoAposta(b.aposta);
     const oddTxt = b.odd ? fmtOdd(b.odd) : "";
     const apostaLinha = resto
