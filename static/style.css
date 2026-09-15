@@ -9,27 +9,84 @@
   --green-bg: #e8f4d9;
   --red: #d94436;
   --red-bg: #fbe9e7;
+  --accent: #6fa72e;
   --radius: 14px;
   font-family: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
-/* ---------- Modo noturno (azulado escuro, não preto) ---------- */
-body.dark-mode {
-  --bg: #0f1626;
-  --sidebar-bg: #0a0f1e;
-  --card-bg: #1a2338;
-  --border: #2b3554;
-  --text: #e7ebf7;
-  --muted: #8b93b3;
-  --green: #8bc34a;
-  --green-bg: rgba(139, 195, 74, 0.14);
-  --red: #ef5350;
-  --red-bg: rgba(239, 83, 80, 0.14);
+/* ---------- Temas ----------
+   --green/--green-bg/--red/--red-bg SEMPRE ficam num tom de verde/vermelho
+   de verdade em todo tema (é o Green/Red das apostas, não pode confundir).
+   --accent é a cor de marca/destaque (botões, logo, links) que muda de
+   verdade entre os temas. */
+
+/* claros */
+body[data-theme="light-oceano"] {
+  --bg: #eef5f7; --sidebar-bg: #0c2b3a; --card-bg: #ffffff; --border: #dbe9ee;
+  --text: #0f2733; --muted: #5f7d89;
+  --green: #2f9e6e; --green-bg: #dcf3e7; --red: #d9534f; --red-bg: #fbe6e5;
+  --accent: #1d7ea6;
 }
-body.dark-mode .bets-table tbody tr:nth-child(even) { background: rgba(255,255,255,0.03); }
-body.dark-mode .bets-table tbody tr:hover { background: rgba(139, 195, 74, 0.08); }
-body.dark-mode .result-tag.void { background: rgba(255,255,255,0.06); }
-body.dark-mode .progress-track { background: rgba(255,255,255,0.08); }
+body[data-theme="light-terracota"] {
+  --bg: #faf3ea; --sidebar-bg: #2b1d14; --card-bg: #fffaf3; --border: #ecdfcd;
+  --text: #2b1d14; --muted: #8a7563;
+  --green: #5a8f3c; --green-bg: #e7f0da; --red: #c0473a; --red-bg: #f7e5e1;
+  --accent: #c8672f;
+}
+body[data-theme="light-ameixa"] {
+  --bg: #f5f1f8; --sidebar-bg: #241b30; --card-bg: #ffffff; --border: #e4dcee;
+  --text: #241b30; --muted: #7c6f8d;
+  --green: #4c9a6a; --green-bg: #e2f2e7; --red: #c14d63; --red-bg: #f7e5ea;
+  --accent: #7c4dab;
+}
+body[data-theme="light-floresta"] {
+  --bg: #f3f1e9; --sidebar-bg: #1b2b1e; --card-bg: #fdfcf7; --border: #e2ddc9;
+  --text: #1b2b1e; --muted: #71806f;
+  --green: #3f7d4a; --green-bg: #dfeee0; --red: #b5533f; --red-bg: #f3e2dc;
+  --accent: #2f6b3a;
+}
+
+/* escuros (azulado escuro, nunca preto puro) */
+body.theme-dark {
+  --bg: #0f1626; --sidebar-bg: #0a0f1e; --card-bg: #1a2338; --border: #2b3554;
+  --text: #e7ebf7; --muted: #8b93b3;
+  --green: #8bc34a; --green-bg: rgba(139, 195, 74, 0.14);
+  --red: #ef5350; --red-bg: rgba(239, 83, 80, 0.14);
+  --accent: #8bc34a;
+}
+body[data-theme="dark-meianoite"] {
+  --bg: #161326; --sidebar-bg: #0f0c1d; --card-bg: #211c36; --border: #372f57;
+  --text: #eae6f7; --muted: #a094c0;
+  --green: #7fce9a; --green-bg: rgba(127, 206, 154, 0.14);
+  --red: #f2716b; --red-bg: rgba(242, 113, 107, 0.14);
+  --accent: #9d6fe0;
+}
+body[data-theme="dark-grafite"] {
+  --bg: #17181a; --sidebar-bg: #101112; --card-bg: #212325; --border: #34373a;
+  --text: #edeeee; --muted: #96999d;
+  --green: #7fbf6f; --green-bg: rgba(127, 191, 111, 0.14);
+  --red: #e0665c; --red-bg: rgba(224, 102, 92, 0.14);
+  --accent: #d9a441;
+}
+body[data-theme="dark-esmeralda"] {
+  --bg: #0d1a15; --sidebar-bg: #081310; --card-bg: #132821; --border: #204238;
+  --text: #e2f3ec; --muted: #84a89a;
+  --green: #57c98a; --green-bg: rgba(87, 201, 138, 0.14);
+  --red: #e8695f; --red-bg: rgba(232, 105, 95, 0.14);
+  --accent: #17a673;
+}
+body[data-theme="dark-vinho"] {
+  --bg: #1f1315; --sidebar-bg: #160d0f; --card-bg: #2a1c1f; --border: #432b30;
+  --text: #f3e6e8; --muted: #b08e93;
+  --green: #7fc98f; --green-bg: rgba(127, 201, 143, 0.14);
+  --red: #e8757a; --red-bg: rgba(232, 117, 122, 0.14);
+  --accent: #c98a5e;
+}
+
+body.theme-dark .bets-table tbody tr:nth-child(even) { background: rgba(255,255,255,0.03); }
+body.theme-dark .bets-table tbody tr:hover { background: rgba(255,255,255,0.05); }
+body.theme-dark .result-tag.void { background: rgba(255,255,255,0.06); }
+body.theme-dark .progress-track { background: rgba(255,255,255,0.08); }
 
 * { box-sizing: border-box; }
 
@@ -88,7 +145,7 @@ body {
 }
 .login-card button {
   margin-top: 6px;
-  background: var(--green);
+  background: var(--accent);
   color: white;
   border: none;
   border-radius: 10px;
@@ -116,7 +173,7 @@ body {
 .brand, .login-brand { display: flex; align-items: center; gap: 10px; }
 .brand-mark {
   width: 34px; height: 34px;
-  background: var(--green);
+  background: var(--accent);
   color: #12151f;
   border-radius: 9px;
   display: flex; align-items: center; justify-content: center;
@@ -291,7 +348,7 @@ body {
   flex-shrink: 0;
 }
 .row-action-btn:hover { filter: brightness(0.94); }
-.row-action-btn.save { background: var(--green); color: white; }
+.row-action-btn.save { background: var(--accent); color: white; }
 .row-action-btn.cancel { background: var(--red-bg); color: var(--red); }
 
 .bets-table th.sortable { cursor: pointer; user-select: none; }
@@ -351,7 +408,7 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   flex-wrap: wrap;
   gap: 12px;
 }
-.eyebrow { font-size: 12px; font-weight: 700; color: var(--green); letter-spacing: 0.02em; margin-bottom: 4px; }
+.eyebrow { font-size: 12px; font-weight: 700; color: var(--accent); letter-spacing: 0.02em; margin-bottom: 4px; }
 .topbar h1 { margin: 0; font-size: 26px; }
 .subtitle { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
 
@@ -381,7 +438,7 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
 .dark-toggle-btn svg { width: 16px; height: 16px; }
 
 .new-bet-btn {
-  background: var(--green);
+  background: var(--accent);
   color: white;
   border: none;
   border-radius: 999px;
@@ -434,7 +491,7 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   color: var(--text);
   font-family: inherit;
 }
-.chip:hover { border-color: var(--green); }
+.chip:hover { border-color: var(--accent); }
 .chip.active {
   background: var(--sidebar-bg);
   color: white;
@@ -675,7 +732,40 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   border-radius: var(--radius);
   padding: 18px 20px;
 }
-.card-highlight { background: var(--green-bg); border-color: #d9edc0; }
+.card-highlight { background: var(--green-bg); border-color: var(--green); }
+
+.config-section-title { margin: 0 0 4px; font-size: 16px; }
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+.theme-swatch {
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  cursor: pointer;
+  background: var(--card-bg);
+  text-align: left;
+  font-family: inherit;
+}
+.theme-swatch:hover { border-color: var(--muted); }
+.theme-swatch.active { border-color: var(--accent); }
+.theme-swatch-preview {
+  height: 46px;
+  border-radius: 8px;
+  display: flex;
+  overflow: hidden;
+  margin-bottom: 8px;
+  border: 1px solid rgba(0,0,0,0.06);
+}
+.theme-swatch-preview .sidebar-strip { width: 22%; height: 100%; }
+.theme-swatch-preview .content-strip { flex: 1; height: 100%; display: flex; align-items: center; justify-content: center; }
+.theme-swatch-preview .accent-dot { width: 16px; height: 16px; border-radius: 50%; }
+.theme-swatch-name { font-size: 12.5px; font-weight: 600; color: var(--text); }
+.theme-swatch.active .theme-swatch-name { color: var(--accent); font-weight: 700; }
 .card-clickable { cursor: pointer; }
 .card-clickable:hover { filter: brightness(0.97); }
 
@@ -780,7 +870,7 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   margin-top: 8px;
   overflow: hidden;
 }
-.progress-fill { height: 100%; background: var(--green); border-radius: 4px; }
+.progress-fill { height: 100%; background: var(--accent); border-radius: 4px; }
 
 /* ---------- Modal "Nova aposta" ---------- */
 .modal-overlay {
@@ -842,7 +932,7 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   font-family: inherit;
 }
 .modal-btn.cancel { background: var(--bg); color: var(--text); }
-.modal-btn.save { background: var(--green); color: white; }
+.modal-btn.save { background: var(--accent); color: white; }
 .modal-btn:hover { filter: brightness(0.95); }
 
 .modal-mode-toggle {
@@ -877,7 +967,7 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   font-family: inherit;
   font-weight: 600;
 }
-#new-bet-print-feedback .casa-choice-buttons button:hover { border-color: var(--green); }
+#new-bet-print-feedback .casa-choice-buttons button:hover { border-color: var(--accent); }
 #new-bet-print-feedback.error { color: var(--red); }
 #new-bet-print-feedback.loading { color: var(--muted); }
 
@@ -891,7 +981,7 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   cursor: text;
 }
 .paste-zone:focus, .paste-zone.has-image {
-  border-color: var(--green);
+  border-color: var(--accent);
   outline: none;
 }
 #new-bet-paste-preview { margin-top: 10px; }

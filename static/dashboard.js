@@ -128,17 +128,54 @@ function updateDailySubtitle() {
   el.innerHTML = `Você está <b style="color:${cor}">${fmtDual(somaUni, somaReais, true)}</b> no dia`;
 }
 
-// ---------- Modo noturno ----------
-function setDarkMode(on) {
-  document.body.classList.toggle("dark-mode", on);
-  document.getElementById("toggle-dark").innerHTML = on ? ICON_SUN : ICON_MOON;
-  try { localStorage.setItem("painel_dark_mode", on ? "1" : "0"); } catch (e) {}
+// ---------- Temas ----------
+const THEMES = [
+  { id: "light-default", label: "Padrão", group: "light", bg: "#eef1f6", sidebarBg: "#12151f", cardBg: "#ffffff", accent: "#6fa72e" },
+  { id: "light-oceano", label: "Oceano", group: "light", bg: "#eef5f7", sidebarBg: "#0c2b3a", cardBg: "#ffffff", accent: "#1d7ea6" },
+  { id: "light-terracota", label: "Terracota", group: "light", bg: "#faf3ea", sidebarBg: "#2b1d14", cardBg: "#fffaf3", accent: "#c8672f" },
+  { id: "light-ameixa", label: "Ameixa", group: "light", bg: "#f5f1f8", sidebarBg: "#241b30", cardBg: "#ffffff", accent: "#7c4dab" },
+  { id: "light-floresta", label: "Floresta", group: "light", bg: "#f3f1e9", sidebarBg: "#1b2b1e", cardBg: "#fdfcf7", accent: "#2f6b3a" },
+  { id: "dark-default", label: "Padrão", group: "dark", bg: "#0f1626", sidebarBg: "#0a0f1e", cardBg: "#1a2338", accent: "#8bc34a" },
+  { id: "dark-meianoite", label: "Meia-noite", group: "dark", bg: "#161326", sidebarBg: "#0f0c1d", cardBg: "#211c36", accent: "#9d6fe0" },
+  { id: "dark-grafite", label: "Grafite", group: "dark", bg: "#17181a", sidebarBg: "#101112", cardBg: "#212325", accent: "#d9a441" },
+  { id: "dark-esmeralda", label: "Esmeralda", group: "dark", bg: "#0d1a15", sidebarBg: "#081310", cardBg: "#132821", accent: "#17a673" },
+  { id: "dark-vinho", label: "Vinho", group: "dark", bg: "#1f1315", sidebarBg: "#160d0f", cardBg: "#2a1c1f", accent: "#c98a5e" },
+];
+
+let CURRENT_THEME = "light-default";
+
+function applyTheme(themeId) {
+  const theme = THEMES.find(t => t.id === themeId) || THEMES[0];
+  CURRENT_THEME = theme.id;
+  document.body.dataset.theme = theme.id;
+  document.body.classList.toggle("theme-dark", theme.group === "dark");
+  document.getElementById("toggle-dark").innerHTML = theme.group === "dark" ? ICON_SUN : ICON_MOON;
+  try { localStorage.setItem("painel_theme", theme.id); } catch (e) {}
+  renderThemeGrid();
   if (ALL_BETS.length) renderAll(); // recria o gráfico com as cores certas
 }
 
 document.getElementById("toggle-dark").addEventListener("click", () => {
-  setDarkMode(!document.body.classList.contains("dark-mode"));
+  const atual = THEMES.find(t => t.id === CURRENT_THEME) || THEMES[0];
+  applyTheme(atual.group === "dark" ? "light-default" : "dark-default");
 });
+
+function renderThemeGrid() {
+  const lightGrid = document.getElementById("theme-grid-light");
+  const darkGrid = document.getElementById("theme-grid-dark");
+  if (!lightGrid || !darkGrid) return;
+  const buildSwatch = (t) => `
+    <button class="theme-swatch ${t.id === CURRENT_THEME ? "active" : ""}" onclick="applyTheme('${t.id}')">
+      <div class="theme-swatch-preview" style="background:${t.bg}">
+        <div class="sidebar-strip" style="background:${t.sidebarBg}"></div>
+        <div class="content-strip"><span class="accent-dot" style="background:${t.accent}"></span></div>
+      </div>
+      <div class="theme-swatch-name">${t.label}</div>
+    </button>
+  `;
+  lightGrid.innerHTML = THEMES.filter(t => t.group === "light").map(buildSwatch).join("");
+  darkGrid.innerHTML = THEMES.filter(t => t.group === "dark").map(buildSwatch).join("");
+}
 
 // ---------- Unidades / Reais ----------
 function setCurrency(showBRL) {
@@ -196,7 +233,7 @@ function tryAutoSelectMonth() {
 // ---------- Chips de tipster (só aparecem com um mês selecionado) ----------
 function renderChips() {
   const bar = document.getElementById("tipster-filter-bar");
-  if (!ACTIVE_MES || CURRENT_VIEW === "ranking" || CURRENT_VIEW === "bancas") {
+  if (!ACTIVE_MES || CURRENT_VIEW === "ranking" || CURRENT_VIEW === "bancas" || CURRENT_VIEW === "config") {
     bar.style.display = "none";
     return;
   }
@@ -318,13 +355,14 @@ document.getElementById("clear-all-filters").addEventListener("click", () => {
 // ---------- Navegação entre visões ----------
 function switchView(view) {
   CURRENT_VIEW = view;
-  ["geral", "historico", "ranking", "bancas"].forEach(v => {
+  ["geral", "historico", "ranking", "bancas", "config"].forEach(v => {
     document.getElementById(`view-${v}`).style.display = (v === view) ? "" : "none";
   });
   document.getElementById("nav-geral").classList.toggle("active", view === "geral");
   document.getElementById("nav-historico").classList.toggle("active", view === "historico");
   document.getElementById("nav-ranking").classList.toggle("active", view === "ranking");
   document.getElementById("nav-bancas").classList.toggle("active", view === "bancas");
+  document.getElementById("nav-config").classList.toggle("active", view === "config");
 
   renderChips();
 
@@ -341,6 +379,7 @@ function switchView(view) {
   if (view === "historico") renderHistorico();
   if (view === "ranking") renderRanking();
   if (view === "bancas") loadBancas();
+  if (view === "config") renderThemeGrid();
 }
 
 document.getElementById("nav-geral").addEventListener("click", () => switchView("geral"));
@@ -352,6 +391,7 @@ document.getElementById("nav-historico").addEventListener("click", () => {
 });
 document.getElementById("nav-ranking").addEventListener("click", () => switchView("ranking"));
 document.getElementById("nav-bancas").addEventListener("click", () => switchView("bancas"));
+document.getElementById("nav-config").addEventListener("click", () => switchView("config"));
 
 document.getElementById("card-aberto").addEventListener("click", () => {
   ONLY_PENDING = true;
@@ -1383,8 +1423,9 @@ function renderChart(resolvedBets) {
     },
   };
 
-  const gridColor = document.body.classList.contains("dark-mode") ? "rgba(255,255,255,0.08)" : "#eef1f6";
-  const tickColor = document.body.classList.contains("dark-mode") ? "#8b93b3" : "#7a8494";
+  const temaAtual = THEMES.find(t => t.id === CURRENT_THEME) || THEMES[0];
+  const gridColor = temaAtual.group === "dark" ? "rgba(255,255,255,0.08)" : "#eef1f6";
+  const tickColor = getComputedStyle(document.body).getPropertyValue("--muted").trim() || "#7a8494";
 
   chartInstance = new Chart(ctx, {
     type: "bar",
@@ -1451,11 +1492,21 @@ setupSortableHeaders(HIST_HEADERS, "hist", renderHistorico);
 setupSortableHeaders(RANK_HEADERS, "rank", renderRanking);
 setupSortableHeaders(BANCA_HEADERS, "banca", renderBancasTable);
 
-// aplica o modo noturno salvo (se houver) antes de tudo
+// aplica o tema salvo antes de tudo — migra do sistema antigo (só claro/escuro)
+// se a pessoa nunca escolheu um tema novo ainda
 document.getElementById("toggle-dark").innerHTML = ICON_MOON;
 try {
-  setDarkMode(localStorage.getItem("painel_dark_mode") === "1");
-} catch (e) {}
+  const salvo = localStorage.getItem("painel_theme");
+  if (salvo) {
+    applyTheme(salvo);
+  } else if (localStorage.getItem("painel_dark_mode") === "1") {
+    applyTheme("dark-default");
+  } else {
+    applyTheme("light-default");
+  }
+} catch (e) {
+  applyTheme("light-default");
+}
 
 setToday();
 loadData();
