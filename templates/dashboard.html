@@ -157,14 +157,9 @@
             <span class="side-note" id="metric-pior-tipster-foot">—</span>
           </div>
 
-          <div class="side-metric" id="ultimas-gerais-block">
-            <span class="side-label">Últimas 5 tips resolvidas</span>
-            <div id="ultimas-gerais-list"></div>
-          </div>
-
-          <div class="side-metric" id="ultimas-tips-block" style="display:none">
-            <span class="side-label">Últimas 10 tips</span>
-            <div id="ultimas-tips-list" class="ultimas-tips-list"></div>
+          <div class="side-metric" id="tipo-summary-block">
+            <span class="side-label">Pré / Live</span>
+            <div id="tipo-summary-list" class="tipo-summary-list"></div>
           </div>
         </div>
       </section>
@@ -176,11 +171,12 @@
             <h2>Lucro por casa</h2>
           </div>
           <table class="bets-table insight-table">
-            <colgroup><col style="width:44%"><col style="width:22%"><col style="width:34%"></colgroup>
+            <colgroup><col style="width:34%"><col style="width:20%"><col style="width:20%"><col style="width:26%"></colgroup>
             <thead>
               <tr>
                 <th id="th-casa-nome">Casa</th>
-                <th id="th-casa-apostas">Apostas</th>
+                <th id="th-casa-apostas" class="col-center">Apostas</th>
+                <th id="th-casa-roi">ROI</th>
                 <th id="th-casa-lucro">Lucro</th>
               </tr>
             </thead>
@@ -188,34 +184,18 @@
           </table>
         </div>
 
-        <div class="insight-col">
-          <div class="card table-card insight-card">
-            <div class="insight-head">
-              <span class="insight-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
-              <h2>Tipsters do mês</h2>
-            </div>
-            <table class="bets-table insight-table">
-              <colgroup><col style="width:46%"><col style="width:20%"><col style="width:34%"></colgroup>
-              <thead>
-                <tr><th>Tipster</th><th>Tips</th><th>Lucro</th></tr>
-              </thead>
-              <tbody id="tipster-summary-body"></tbody>
-            </table>
+        <div class="card table-card insight-card">
+          <div class="insight-head">
+            <span class="insight-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+            <h2>Tipsters do mês</h2>
           </div>
-
-          <div class="card table-card insight-card">
-            <div class="insight-head">
-              <span class="insight-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
-              <h2>Pré / Live</h2>
-            </div>
-            <table class="bets-table insight-table">
-              <colgroup><col style="width:46%"><col style="width:20%"><col style="width:34%"></colgroup>
-              <thead>
-                <tr><th>Tipo</th><th>Tips</th><th>Lucro</th></tr>
-              </thead>
-              <tbody id="tipo-summary-body"></tbody>
-            </table>
-          </div>
+          <table class="bets-table insight-table">
+            <colgroup><col style="width:34%"><col style="width:20%"><col style="width:20%"><col style="width:26%"></colgroup>
+            <thead>
+              <tr><th>Tipster</th><th class="col-center">Apostas</th><th>ROI</th><th>Lucro</th></tr>
+            </thead>
+            <tbody id="tipster-summary-body"></tbody>
+          </table>
         </div>
       </section>
       </div>
