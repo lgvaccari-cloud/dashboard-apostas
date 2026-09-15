@@ -1243,6 +1243,41 @@ function populateNewBetTipsterOptions() {
   if (tipsters.includes(anterior)) select.value = anterior;
 }
 
+// Chips de atalho pros tipsters do mês na aba "Por print" — clicar preenche
+// o campo Tipster sozinho; ainda dá pra digitar livremente (inclusive
+// "somar"/"duplicar", que continuam funcionando como comando nesse campo).
+function renderPrintTipsterChips() {
+  const container = document.getElementById("print-tipster-chips");
+  if (!container) return;
+  const mesEscolhido = document.getElementById("new-bet-print-mes").value;
+  const tipsters = [...new Set(
+    ALL_BETS.filter(b => !mesEscolhido || b.mes === mesEscolhido)
+      .map(b => (b.tipster || "").trim())
+      .filter(Boolean)
+  )].sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
+
+  const valorAtual = document.getElementById("new-bet-print-caption").value.trim();
+  container.innerHTML = tipsters.map(t => `
+    <button type="button" class="chip print-tipster-chip${t === valorAtual ? " active" : ""}">${esc(t)}</button>
+  `).join("");
+
+  container.querySelectorAll(".print-tipster-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      const input = document.getElementById("new-bet-print-caption");
+      const jaEstavaAtivo = chip.classList.contains("active");
+      input.value = jaEstavaAtivo ? "" : chip.textContent;
+      renderPrintTipsterChips();
+      input.focus();
+    });
+  });
+}
+document.getElementById("new-bet-print-mes").addEventListener("change", renderPrintTipsterChips);
+document.getElementById("new-bet-print-caption").addEventListener("input", () => {
+  document.querySelectorAll(".print-tipster-chip").forEach(chip => {
+    chip.classList.toggle("active", chip.textContent === document.getElementById("new-bet-print-caption").value.trim());
+  });
+});
+
 function setNewBetTipo(tipo) {
   NEW_BET_TIPO = (NEW_BET_TIPO === tipo) ? "" : tipo;
   document.getElementById("new-bet-tipo-pre").classList.toggle("active", NEW_BET_TIPO === "Pré");
@@ -1274,6 +1309,7 @@ function openNewBetModal() {
   document.getElementById("new-bet-print-file").value = "";
   document.getElementById("new-bet-print-data").value = "";
   document.getElementById("new-bet-print-caption").value = "";
+  renderPrintTipsterChips();
   document.getElementById("new-bet-print-feedback").innerHTML = "";
   document.getElementById("new-bet-print-feedback").className = "";
   PASTED_IMAGE = null;

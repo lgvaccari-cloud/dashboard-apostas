@@ -1408,6 +1408,7 @@ th.col-center, td.col-center { text-align: center !important; }
 .chip:disabled:hover { border-color: var(--border); }
 
 /* Texto pequeno de ajuda dentro do label de um campo (ex: "deixe em branco pra hoje") */
+.label-title { white-space: nowrap; }
 .label-hint {
   font-weight: 400;
   color: var(--muted);
@@ -1452,3 +1453,39 @@ th.col-center, td.col-center { text-align: center !important; }
   justify-content: center;
 }
 .hist-search-clear:hover { color: var(--text); }
+
+/* Botão nativo "Escolher arquivo" (input[type=file]) — por padrão vem com a
+   cara do sistema operacional (bem "Windows 98"). Aqui estiliza só a parte
+   do botão via ::file-selector-button, deixando o texto "Nenhum arquivo
+   escolhido" como o navegador já mostra. */
+input[type="file"] {
+  color: var(--muted);
+  font-size: 13px;
+  font-family: inherit;
+}
+input[type="file"]::file-selector-button {
+  padding: 8px 16px;
+  margin-right: 12px;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: white;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+input[type="file"]::file-selector-button:hover { filter: brightness(1.08); }
+
+/* Chips de atalho pros tipsters do mês (aba "Por print" da Nova aposta) */
+.print-tipster-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: -6px;
+}
+.print-tipster-chip {
+  padding: 5px 12px;
+  font-size: 12px;
+}
