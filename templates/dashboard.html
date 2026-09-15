@@ -343,6 +343,27 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="crop-overlay" style="display:none">
+    <div class="modal-card crop-modal-card">
+      <h2>Recortar print</h2>
+      <p class="crop-hint">Arrasta os cantos pra ajustar, ou arrasta o meio pra mover.</p>
+      <div class="crop-canvas-wrap" id="crop-canvas-wrap">
+        <img id="crop-image" alt="Print a recortar" draggable="false">
+        <div class="crop-box" id="crop-box">
+          <div class="crop-handle" data-handle="nw"></div>
+          <div class="crop-handle" data-handle="ne"></div>
+          <div class="crop-handle" data-handle="sw"></div>
+          <div class="crop-handle" data-handle="se"></div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="modal-btn cancel" id="crop-cancel">Cancelar</button>
+        <button type="button" class="modal-btn cancel" id="crop-skip">Usar sem cortar</button>
+        <button type="button" class="modal-btn save" id="crop-confirm">Cortar e usar</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="new-bet-overlay" style="display:none">
     <div class="modal-card">
       <h2>Nova aposta</h2>
