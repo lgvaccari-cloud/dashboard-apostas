@@ -764,6 +764,14 @@ function resultHeaderClass(resultado) {
   return "result-pending";
 }
 
+function resultBadgeLabel(resultado) {
+  const r = (resultado || "").toLowerCase();
+  if (r === "green") return "Ganhou";
+  if (r === "red") return "Perdeu";
+  if (r === "void") return "Void";
+  return "Pendente";
+}
+
 function editFromCard(idx) {
   setHistViewMode("table");
   startEdit(idx);
@@ -786,32 +794,31 @@ function renderBetsCards(bets) {
       : (oddTxt ? `<b>@${oddTxt}</b>` : "");
 
     const plClass = b.lucro_uni > 0 ? "positive" : b.lucro_uni < 0 ? "negative" : "";
+    const acoesEEditar = `
+      <button class="bet-card-edit" title="Editar" onclick="editFromCard(${idx})">✎</button>
+      ${rowMenuHtml(idx, "bet-card-menu-btn")}
+    `;
     const rodapeDireita = isResolved(b)
-      ? `<span class="bet-card-pl ${plClass}">${fmtDual(b.lucro_uni, b.lucro_reais, true)}</span>`
+      ? `<span class="bet-card-pl ${plClass}">${fmtDual(b.lucro_uni, b.lucro_reais, true)}</span>${acoesEEditar}`
       : `<div class="resolve-actions">
            <button class="resolve-btn green" title="Green" onclick="resolveBetByIndex(${idx}, 'Green')">✓</button>
            <button class="resolve-btn red" title="Red" onclick="resolveBetByIndex(${idx}, 'Red')">✕</button>
            <button class="resolve-btn void" title="Void" onclick="resolveBetByIndex(${idx}, 'Void')">–</button>
-         </div>`;
+         </div>${acoesEEditar}`;
 
     return `
       <div class="bet-card">
-        <div class="bet-card-header ${resultHeaderClass(b.resultado)}">
-          <span class="data">${b.data || "—"}</span>
-          <span class="tipster">${b.tipster || "—"}</span>
-          <span class="valor">${b.stake ? fmtDual(b.stake, b.stake_reais, false) : "—"}</span>
-          <div class="bet-card-header-actions">
-            <button class="bet-card-edit" title="Editar" onclick="editFromCard(${idx})">✎</button>
-            ${rowMenuHtml(idx, "bet-card-menu-btn")}
-          </div>
+        <div class="bet-card-header">
+          <span class="bet-card-title">${b.stake ? fmtDual(b.stake, b.stake_reais, false) : "—"} - ${b.tipster || "—"}</span>
+          <span class="bet-card-badge ${resultHeaderClass(b.resultado)}">${resultBadgeLabel(b.resultado)}</span>
         </div>
         <div class="bet-card-body">
           <div class="bet-card-jogo">${jogo}</div>
           ${apostaLinha ? `<div class="bet-card-aposta">${apostaLinha}</div>` : ""}
         </div>
         <div class="bet-card-footer">
-          <span class="bet-card-casa">${b.casa || "—"}</span>
-          ${rodapeDireita}
+          <span class="bet-card-footer-left"><span class="bet-card-casa">${b.casa || "—"}</span><span class="bet-card-data">· ${b.data || "—"}</span></span>
+          <div class="bet-card-footer-right">${rodapeDireita}</div>
         </div>
       </div>
     `;

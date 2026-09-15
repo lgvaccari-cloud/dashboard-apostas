@@ -557,40 +557,31 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
 .bet-card-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
-  padding: 12px 16px;
-  color: white;
+  padding: 13px 16px;
+  background: var(--sidebar-bg);
 }
-.bet-card-header.result-green { background: var(--green); }
-.bet-card-header.result-red { background: var(--red); }
-.bet-card-header.result-void { background: var(--muted); }
-.bet-card-header.result-pending { background: #c99a1f; }
-.bet-card-header .data { font-size: 13px; font-weight: 600; opacity: 0.95; flex-shrink: 0; }
-.bet-card-header .tipster {
-  font-weight: 700;
-  font-size: 14px;
-  flex: 1;
+.bet-card-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #eef1f6;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.bet-card-header .valor { font-size: 14px; font-weight: 700; flex-shrink: 0; }
-.bet-card-header-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
-.bet-card-edit, .bet-card-menu-btn {
-  width: 24px;
-  height: 24px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.22);
-  color: white;
-  font-size: 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.bet-card-badge {
   flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 999px;
 }
-.bet-card-edit:hover, .bet-card-menu-btn:hover { background: rgba(255, 255, 255, 0.35); }
+.bet-card-badge.result-green { background: var(--green); }
+.bet-card-badge.result-red { background: var(--red); }
+.bet-card-badge.result-void { background: var(--muted); }
+.bet-card-badge.result-pending { background: #c99a1f; }
 
 .bet-card-body { padding: 16px; flex: 1; }
 .bet-card-jogo {
@@ -614,17 +605,32 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   padding: 12px 16px;
   border-top: 1px solid var(--border);
 }
+.bet-card-footer-left { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bet-card-casa {
   font-weight: 700;
   font-size: 14px;
   color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
+.bet-card-data { font-size: 13px; font-weight: 500; color: var(--muted); margin-left: 4px; }
+.bet-card-footer-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .bet-card-pl { font-weight: 700; font-size: 15px; white-space: nowrap; }
 .bet-card-pl.pending { color: var(--muted); font-weight: 600; font-size: 13px; }
 .bet-card-footer .resolve-actions { flex-shrink: 0; }
+.bet-card-edit, .bet-card-menu-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.bet-card-edit:hover, .bet-card-menu-btn:hover { background: var(--border); color: var(--text); }
 
 /* menu "..." de excluir, usado no card e na tabela */
 .row-menu-wrap { position: relative; display: inline-block; }
