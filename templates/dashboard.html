@@ -53,22 +53,24 @@
         </div>
       </header>
 
-      <div class="filters-bar">
-        <span class="filters-label">Filtro por mês</span>
-        <div id="mes-chips" class="chips"></div>
-        <select id="mes-select" class="mobile-filter-select"></select>
-      </div>
+      <div class="filters-row">
+        <div class="filter-group">
+          <span class="filters-label">Mês</span>
+          <div id="mes-chips" class="chips"></div>
+          <select id="mes-select" class="mobile-filter-select"></select>
+        </div>
 
-      <div class="filters-bar" id="tipster-filter-bar" style="display:none">
-        <span class="filters-label">Filtro por tipster</span>
-        <div id="tipster-chips" class="chips"></div>
-        <select id="tipster-select" class="mobile-filter-select"></select>
-      </div>
+        <div class="filter-group" id="tipster-filter-bar" style="display:none">
+          <span class="filters-label">Tipster</span>
+          <div id="tipster-chips" class="chips"></div>
+          <select id="tipster-select" class="mobile-filter-select"></select>
+        </div>
 
-      <div class="filters-bar" id="casa-filter-bar" style="display:none">
-        <span class="filters-label">Filtro por casa</span>
-        <div id="casa-chips" class="chips"></div>
-        <select id="casa-select" class="mobile-filter-select"></select>
+        <div class="filter-group" id="casa-filter-bar" style="display:none">
+          <span class="filters-label">Casa</span>
+          <div id="casa-chips" class="chips"></div>
+          <select id="casa-select" class="mobile-filter-select"></select>
+        </div>
       </div>
 
       <div class="active-filters-bar" id="active-filters-bar">
@@ -182,7 +184,7 @@
               <tr>
                 <th id="th-casa-nome">Casa</th>
                 <th id="th-casa-apostas" class="col-center">Apostas</th>
-                <th id="th-casa-roi">ROI</th>
+                <th id="th-casa-roi" class="col-center">ROI</th>
                 <th id="th-casa-lucro">Lucro</th>
               </tr>
             </thead>
@@ -198,7 +200,7 @@
           <table class="bets-table insight-table">
             <colgroup><col style="width:34%"><col style="width:20%"><col style="width:20%"><col style="width:26%"></colgroup>
             <thead>
-              <tr><th>Tipster</th><th class="col-center">Apostas</th><th>ROI</th><th>Lucro</th></tr>
+              <tr><th>Tipster</th><th class="col-center">Apostas</th><th class="col-center">ROI</th><th>Lucro</th></tr>
             </thead>
             <tbody id="tipster-summary-body"></tbody>
           </table>
@@ -253,9 +255,9 @@
             <thead>
               <tr>
                 <th id="th-rank-tipster">Tipster</th>
-                <th id="th-rank-apostas">Apostas</th>
-                <th id="th-rank-taxa">Taxa de acerto</th>
-                <th id="th-rank-roi">ROI</th>
+                <th id="th-rank-apostas" class="col-center">Apostas</th>
+                <th id="th-rank-taxa" class="col-center">Taxa de acerto</th>
+                <th id="th-rank-roi" class="col-center">ROI</th>
                 <th id="th-rank-resultado">Resultado</th>
               </tr>
             </thead>
@@ -294,8 +296,8 @@
             <thead>
               <tr>
                 <th id="th-banca-casa">Casa</th>
-                <th id="th-banca-contas">Contas ativas</th>
-                <th id="th-banca-total">Banca somada</th>
+                <th id="th-banca-contas" class="col-center">Contas ativas</th>
+                <th id="th-banca-total" class="col-center">Banca somada</th>
                 <th id="th-banca-lucro">Lucro</th>
               </tr>
             </thead>
