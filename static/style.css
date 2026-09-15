@@ -587,16 +587,17 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
 .bet-card-body { padding: 16px; flex: 1; }
 .bet-card-jogo {
   font-weight: 700;
-  font-size: 14px;
+  font-size: 15.5px;
   color: var(--text);
   line-height: 1.35;
 }
 .bet-card-aposta {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
   margin-top: 5px;
 }
+.bet-card-aposta b { color: var(--text); font-weight: 700; }
 
 .bet-card-footer {
   display: flex;
