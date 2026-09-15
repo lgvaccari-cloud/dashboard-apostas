@@ -122,6 +122,31 @@ function fmtDual(nUni, nReais, sign) {
 
 // odd sempre com ponto decimal (não vírgula). Mostra a 3ª casa só quando ela
 // existe de verdade: 1.80 fica "1.80", 1.675 fica "1.675".
+// Logo da casa, quando existe em static/logos/<slug>.png|svg. Sem arquivo
+// pra essa casa, cai sozinho no texto (o onerror troca a tag inteira).
+// Cor de fundo de cada logo (extraída dos cantos da imagem original), pra
+// o chip "emendar" com o logo em vez de deixar uma borda branca/cinza ao
+// redor. Casa sem entrada aqui usa o fundo neutro do tema (var(--bg)).
+const CASA_LOGO_BG = {
+  "bet365": "#027b5b",
+  "betbra": "#1d1d1d",
+};
+
+function slugCasa(casa) {
+  return String(casa || "").toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
+function casaBadgeHtml(casa) {
+  if (!casa) return `<span class="bet-card-casa">—</span>`;
+  const slug = slugCasa(casa);
+  const fallback = `<span class="bet-card-casa">${esc(casa)}</span>`.replace(/"/g, "&quot;");
+  const bgCor = CASA_LOGO_BG[slug];
+  const chipStyle = bgCor ? ` style="background:${bgCor};border-color:${bgCor}"` : "";
+  return `<span class="bet-card-casa-chip"${chipStyle}><img src="/static/logos/${slug}.png" alt="${esc(casa)}" title="${esc(casa)}" class="bet-card-casa-logo" onerror="this.parentElement.outerHTML='${fallback}'"></span>`;
+}
+
 function fmtOdd(odd) {
   const tres = Number(odd).toFixed(3);
   return tres.endsWith("0") ? tres.slice(0, -1) : tres;
@@ -1000,7 +1025,7 @@ function renderBetsCards(bets) {
           ${apostaLinha ? `<div class="bet-card-aposta">${apostaLinha}</div>` : ""}
         </div>
         <div class="bet-card-footer">
-          <span class="bet-card-footer-left"><span class="bet-card-casa">${b.casa || "—"}</span><span class="bet-card-data">· ${b.data || "—"}</span></span>
+          <span class="bet-card-footer-left">${casaBadgeHtml(b.casa)}<span class="bet-card-data">· ${b.data || "—"}</span></span>
           <div class="bet-card-footer-right">${rodapeDireita}</div>
         </div>
       </div>
