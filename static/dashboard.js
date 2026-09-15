@@ -1534,7 +1534,11 @@ function renderHorarioPendenteForm(mes, pendentes, linhasHtml) {
 
 document.getElementById("new-bet-print-send").addEventListener("click", async () => {
   const mes = document.getElementById("new-bet-print-mes").value;
-  const dataAposta = document.getElementById("new-bet-print-data").value.trim();
+  const dataIsoDigitada = document.getElementById("new-bet-print-data").value.trim();
+  // o input type="date" devolve "aaaa-mm-dd" — a planilha espera "dd/mm/aaaa"
+  const dataAposta = dataIsoDigitada
+    ? dataIsoDigitada.split("-").reverse().join("/")
+    : "";
   const fileInput = document.getElementById("new-bet-print-file");
   const caption = document.getElementById("new-bet-print-caption").value;
   const imagemParaEnviar = fileInput.files.length ? fileInput.files[0] : PASTED_IMAGE;
