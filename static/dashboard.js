@@ -571,6 +571,7 @@ const BANCA_HEADERS = [
   ["th-banca-casa", "casa"],
   ["th-banca-contas", "contas"],
   ["th-banca-total", "banca"],
+  ["th-banca-lucro", "lucro"],
 ];
 
 function setupSortableHeaders(headers, stateKey, rerenderFn) {
@@ -1214,6 +1215,22 @@ function renderRanking() {
 }
 
 // ---------- Bancas por casa ----------
+// Diferença em R$ abaixo da qual NÃO mostramos alerta (arredondamento de centavos).
+const TOLERANCIA_LUCRO = 1.00;
+
+// Lucro por casa vindo do planilhamento (mesma base da Visão geral), só do mês
+// ativo e sem aplicar o filtro de tipster.
+function lucroPlanilhamentoPorCasa() {
+  const porCasa = {};
+  ALL_BETS.forEach(b => {
+    if (!b.casa) return;
+    if (ACTIVE_MES && b.mes !== ACTIVE_MES) return;
+    if (!isResolved(b)) return;
+    porCasa[b.casa] = (porCasa[b.casa] || 0) + b.lucro_reais;
+  });
+  return porCasa;
+}
+
 let LAST_BANCAS_RESUMO = [];
 let LAST_BANCAS_CONTAS = [];
 let EXPANDED_CASA = null;
@@ -1225,11 +1242,11 @@ async function loadBancas() {
   if (!ACTIVE_MES) {
     document.getElementById("banca-total").textContent = "—";
     document.getElementById("banca-total-foot").textContent = "Selecione um mês no filtro";
-    tbody.innerHTML = `<tr><td colspan="3">Selecione um mês no filtro pra ver as bancas desse mês.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5">Selecione um mês no filtro pra ver as bancas desse mês.</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = `<tr><td colspan="3">Carregando...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="5">Carregando...</td></tr>`;
   try {
     const res = await fetch(`/api/bancas/${encodeURIComponent(ACTIVE_MES)}`);
     const data = await res.json();
@@ -1238,7 +1255,7 @@ async function loadBancas() {
     LAST_BANCAS_CONTAS = data.contas;
     renderBancasTable();
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="3">Erro: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5">Erro: ${err.message}</td></tr>`;
   }
 }
 
@@ -1251,22 +1268,37 @@ function renderBancasTable() {
     : LAST_BANCAS_RESUMO.slice().sort((a, b) => b.banca - a.banca);
 
   const totalGeral = LAST_BANCAS_RESUMO.reduce((s, r) => s + r.banca, 0);
+  const lucroPorCasaPlan = lucroPlanilhamentoPorCasa();
+  const casasComConta = LAST_BANCAS_RESUMO.filter(r => r.contas > 0).length;
   document.getElementById("banca-total").textContent =
     totalGeral.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   document.getElementById("banca-total-foot").textContent =
-    `${LAST_BANCAS_RESUMO.length} casa${LAST_BANCAS_RESUMO.length === 1 ? "" : "s"} ativa${LAST_BANCAS_RESUMO.length === 1 ? "" : "s"}`;
+    `${casasComConta} casa${casasComConta === 1 ? "" : "s"} ativa${casasComConta === 1 ? "" : "s"}`;
 
   if (!linhasOrdenadas.length) {
-    tbody.innerHTML = `<tr><td colspan="3">Não encontrei a tabela de bancas nessa aba.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5">Não encontrei a tabela de bancas nessa aba.</td></tr>`;
     return;
   }
 
   tbody.innerHTML = linhasOrdenadas.map(l => {
+    const lucro = l.lucro || 0;
+    const lucroClass = lucro > 0 ? "positive" : (lucro < 0 ? "negative" : "");
+
+    const lucroPlan = lucroPorCasaPlan[l.casa] || 0;
+    const dif = lucro - lucroPlan;
+    const bate = Math.abs(dif) <= TOLERANCIA_LUCRO;
+    const fmtR = n => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    const alertaHtml = bate
+      ? ""
+      : `<span class="banca-alerta" title="Planilhamento: ${fmtR(lucroPlan)} — diferença de ${fmtR(Math.abs(dif))}">⚠</span>`;
+
     const rowHtml = `
       <tr class="banca-casa-row" onclick="toggleBancaCasa('${escJs(l.casa)}')">
         <td data-label="Casa">${l.casa}</td>
         <td data-label="Contas ativas">${l.contas} conta${l.contas === 1 ? "" : "s"} ativa${l.contas === 1 ? "" : "s"}</td>
         <td data-label="Banca somada"><b>${l.banca.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</b></td>
+        <td data-label="Lucro" class="${lucroClass}"><b>${lucro.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</b></td>
+        <td data-label="" class="td-alerta">${alertaHtml}</td>
       </tr>
     `;
     if (EXPANDED_CASA !== l.casa) return rowHtml;
@@ -1274,12 +1306,12 @@ function renderBancasTable() {
     const contasDaCasa = LAST_BANCAS_CONTAS.filter(c => c.casa === l.casa);
     const detailHtml = `
       <tr class="banca-detail-row">
-        <td colspan="3">
+        <td colspan="5">
           <div class="banca-detail-inner">
             ${contasDaCasa.map(c => `
               <div class="banca-conta-line">
                 <span class="banca-conta-nome">${c.nome || "—"}</span>
-                <input class="edit-input" id="banca-input-${c.row}" value="${esc(c.banca.toFixed(2).replace(".", ","))}">
+                <input class="edit-input" id="banca-input-${c.row}" title="Saldo atual (coluna Final)" value="${esc((c.final ?? c.banca).toFixed(2).replace(".", ","))}">
                 <button class="row-action-btn save" onclick="event.stopPropagation(); saveBancaConta(${c.row})">Salvar</button>
               </div>
             `).join("")}

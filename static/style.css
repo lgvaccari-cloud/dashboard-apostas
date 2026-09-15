@@ -504,8 +504,7 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   color: white;
   border-color: var(--sidebar-bg);
 }
-/* chip "Todos" — abre cada fileira de filtros */
-.chip-all {
+/* chip "Todos" — abre cada fileira de filtros */.chip-all {
   font-weight: 600;
   color: var(--muted);
   margin-right: 6px;
@@ -1142,4 +1141,13 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
 @media (max-width: 480px) {
   .topbar-actions { width: 100%; justify-content: space-between; }
   .new-bet-btn { flex: 1 1 auto; text-align: center; }
+}
+
+/* Coluna de alerta da tabela de bancas (lucro não bate com o planilhamento) */
+.th-alerta, .td-alerta { width: 34px; text-align: center; }
+.banca-alerta {
+  color: #f0a500;
+  font-size: 15px;
+  cursor: help;
+  line-height: 1;
 }
