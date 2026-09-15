@@ -174,13 +174,14 @@ def api_add_bet_from_image():
     image_file = request.files["image"]
     mes = request.form.get("mes", "")
     caption = request.form.get("caption", "")
+    data_aposta = request.form.get("data", "")
 
     try:
         resp = requests.post(
             f"{BOT_API_URL}/internal/process_screenshot",
             headers={"X-Internal-Key": BOT_API_KEY},
             files={"image": (image_file.filename, image_file.stream, image_file.mimetype)},
-            data={"mes": mes, "caption": caption},
+            data={"mes": mes, "caption": caption, "data": data_aposta},
             timeout=90,
         )
         return jsonify(resp.json()), resp.status_code
