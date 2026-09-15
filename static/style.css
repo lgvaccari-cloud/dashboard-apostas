@@ -1183,11 +1183,6 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   margin-top: 16px;
   align-items: start;
 }
-.insight-col {
-  display: grid;
-  gap: 16px;
-  align-content: start;
-}
 .insight-card { overflow: hidden; }
 .insight-head {
   display: flex;
@@ -1210,6 +1205,23 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
 .insight-icon svg { width: 100%; height: 100%; }
 .insight-table th:not(:first-child),
 .insight-table td:not(:first-child) { text-align: right; }
+.insight-table th.col-center,
+.insight-table td.col-center { text-align: center; }
+
+/* Pré / Live no painel lateral */
+.tipo-summary-list { margin-top: 6px; }
+.tipo-line {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+}
+.tipo-line:last-child { border-bottom: none; }
+.tipo-nome { font-weight: 600; color: var(--text); min-width: 62px; }
+.tipo-qtd { color: var(--muted); font-size: 12.5px; }
+.tipo-lucro { margin-left: auto; font-weight: 600; }
 
 /* Modal "Bater a banca" */
 .ajuste-resumo {

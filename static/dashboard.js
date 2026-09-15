@@ -578,6 +578,7 @@ const BANCA_HEADERS = [
 const CASA_HEADERS = [
   ["th-casa-nome", "casa"],
   ["th-casa-apostas", "apostas"],
+  ["th-casa-roi", "roi"],
   ["th-casa-lucro", "lucro"],
 ];
 
@@ -1613,20 +1614,6 @@ function renderAll() {
   const mostrarMelhorPior = !ACTIVE_TIPSTER;
   document.getElementById("melhor-tipster-block").style.display = mostrarMelhorPior ? "" : "none";
   document.getElementById("pior-tipster-block").style.display = mostrarMelhorPior ? "" : "none";
-  document.getElementById("ultimas-gerais-block").style.display = mostrarMelhorPior ? "" : "none";
-  if (mostrarMelhorPior) {
-    const ultimasGerais = resolved.slice()
-      .sort(compareRecentFirst)
-      .slice(0, 5);
-    document.getElementById("ultimas-gerais-list").innerHTML = ultimasGerais.map(b => `
-      <div class="ultima-tip-line">
-        <span class="ultima-tip-tipster" title="${esc(b.tipster)}">${b.tipster || "—"}</span>
-        <span class="ultima-tip-aposta" title="${esc(b.aposta)}">${b.aposta || "—"}</span>
-        ${resultTag(b.resultado)}
-      </div>
-    `).join("") || `<div class="ultima-tip-line">Sem apostas resolvidas ainda.</div>`;
-  }
-
   document.getElementById("ultimas-tips-block").style.display = ACTIVE_TIPSTER ? "" : "none";
   if (ACTIVE_TIPSTER) {
     const ultimas = bets.slice()
@@ -1703,17 +1690,20 @@ function renderCasaSummary(bets) {
   const porCasa = {};
   bets.forEach(b => {
     if (!b.casa) return;
-    if (!porCasa[b.casa]) porCasa[b.casa] = { apostas: 0, lucro: 0, lucroReais: 0 };
+    if (!porCasa[b.casa]) porCasa[b.casa] = { apostas: 0, stake: 0, lucro: 0, lucroReais: 0 };
     const c = porCasa[b.casa];
     c.apostas += 1;
     if (isResolved(b)) {
+      c.stake += b.stake;
       c.lucro += b.lucro_uni;
       c.lucroReais += b.lucro_reais;
     }
   });
 
   const linhas = applySort(
-    Object.entries(porCasa).map(([casa, c]) => ({ casa, ...c })),
+    Object.entries(porCasa).map(([casa, c]) => ({
+      casa, ...c, roi: c.stake > 0 ? (c.lucro / c.stake) * 100 : null,
+    })),
     SORT_STATE.casa,
     (l, k) => l[k]
   );
@@ -1729,7 +1719,8 @@ function renderCasaSummary(bets) {
     return `
       <tr>
         <td>${l.casa}</td>
-        <td>${l.apostas}</td>
+        <td class="col-center">${l.apostas}</td>
+        <td class="${l.roi == null ? "" : l.roi > 0 ? "positive" : l.roi < 0 ? "negative" : ""}">${l.roi == null ? "—" : fmtPct(l.roi)}</td>
         <td class="${cls}"><b>${fmtDual(l.lucro, l.lucroReais, true)}</b></td>
       </tr>
     `;
@@ -1745,17 +1736,18 @@ function renderTipsterSummary(bets) {
   bets.forEach(b => {
     const nome = (b.tipster || "").trim();
     if (!nome) return;
-    if (!porTipster[nome]) porTipster[nome] = { tips: 0, lucro: 0, lucroReais: 0 };
+    if (!porTipster[nome]) porTipster[nome] = { apostas: 0, stake: 0, lucro: 0, lucroReais: 0 };
     const t = porTipster[nome];
-    t.tips += 1;
+    t.apostas += 1;
     if (isResolved(b)) {
+      t.stake += b.stake;
       t.lucro += b.lucro_uni;
       t.lucroReais += b.lucro_reais;
     }
   });
 
   const linhas = Object.entries(porTipster)
-    .map(([tipster, t]) => ({ tipster, ...t }))
+    .map(([tipster, t]) => ({ tipster, ...t, roi: t.stake > 0 ? (t.lucro / t.stake) * 100 : null }))
     .sort((a, b) => a.tipster.localeCompare(b.tipster, "pt-BR", { sensitivity: "base" }));
 
   if (!linhas.length) {
@@ -1768,30 +1760,31 @@ function renderTipsterSummary(bets) {
     return `
       <tr>
         <td>${l.tipster}</td>
-        <td>${l.tips}</td>
+        <td class="col-center">${l.apostas}</td>
+        <td class="${l.roi == null ? "" : l.roi > 0 ? "positive" : l.roi < 0 ? "negative" : ""}">${l.roi == null ? "—" : fmtPct(l.roi)}</td>
         <td class="${cls}"><b>${fmtDual(l.lucro, l.lucroReais, true)}</b></td>
       </tr>
     `;
   }).join("");
 }
 
-// ---------- Pré / Live (Visão geral) ----------
+// ---------- Pré / Live (painel lateral da Visão geral) ----------
 // A coluna Tipo da planilha fica em branco pros tipsters que mandam os dois.
 function renderTipoSummary(bets) {
-  const tbody = document.getElementById("tipo-summary-body");
-  if (!tbody) return;
+  const lista = document.getElementById("tipo-summary-list");
+  if (!lista) return;
 
   const buckets = {
-    "Pré": { tips: 0, lucro: 0, lucroReais: 0 },
-    "Live": { tips: 0, lucro: 0, lucroReais: 0 },
-    "Sem tipo": { tips: 0, lucro: 0, lucroReais: 0 },
+    "Pré": { apostas: 0, lucro: 0, lucroReais: 0 },
+    "Live": { apostas: 0, lucro: 0, lucroReais: 0 },
+    "Sem tipo": { apostas: 0, lucro: 0, lucroReais: 0 },
   };
 
   bets.forEach(b => {
     const bruto = stripAcentos((b.tipo || "").trim()).toLowerCase();
     const chave = bruto.startsWith("pre") ? "Pré" : (bruto === "live" ? "Live" : "Sem tipo");
     const t = buckets[chave];
-    t.tips += 1;
+    t.apostas += 1;
     if (isResolved(b)) {
       t.lucro += b.lucro_uni;
       t.lucroReais += b.lucro_reais;
@@ -1800,22 +1793,22 @@ function renderTipoSummary(bets) {
 
   // "Sem tipo" só aparece se existir de fato
   const linhas = Object.entries(buckets)
-    .filter(([nome, t]) => nome !== "Sem tipo" || t.tips > 0)
+    .filter(([nome, t]) => nome !== "Sem tipo" || t.apostas > 0)
     .map(([nome, t]) => ({ nome, ...t }));
 
-  if (!linhas.some(l => l.tips > 0)) {
-    tbody.innerHTML = `<tr><td colspan="3">Sem apostas nesse filtro ainda.</td></tr>`;
+  if (!linhas.some(l => l.apostas > 0)) {
+    lista.innerHTML = `<span class="side-note">Sem apostas nesse filtro ainda.</span>`;
     return;
   }
 
-  tbody.innerHTML = linhas.map(l => {
+  lista.innerHTML = linhas.map(l => {
     const cls = l.lucro > 0 ? "positive" : l.lucro < 0 ? "negative" : "";
     return `
-      <tr>
-        <td>${l.nome}</td>
-        <td>${l.tips}</td>
-        <td class="${cls}"><b>${fmtDual(l.lucro, l.lucroReais, true)}</b></td>
-      </tr>
+      <div class="tipo-line">
+        <span class="tipo-nome">${l.nome}</span>
+        <span class="tipo-qtd">${l.apostas} aposta${l.apostas === 1 ? "" : "s"}</span>
+        <span class="tipo-lucro ${cls}">${fmtDual(l.lucro, l.lucroReais, true)}</span>
+      </div>
     `;
   }).join("");
 }
