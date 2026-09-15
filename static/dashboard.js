@@ -8,6 +8,7 @@ const ICON_MOON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const ICON_SUN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`;
 const ICON_TREND_UP = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg>`;
 const ICON_TREND_DOWN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l6 6 4-4 8 8"/><path d="M17 17h4v-4"/></svg>`;
+const ICON_ALERTA = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.3 1.8 17.5A2 2 0 0 0 3.5 20.5h17a2 2 0 0 0 1.7-3L13.7 3.3a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4"/><path d="M12 17h.01"/></svg>`;
 const ICON_TARGET = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>`;
 
 let ALL_BETS = [];
@@ -533,6 +534,7 @@ const SORT_STATE = {
   hist: { key: null, dir: 1 },
   rank: { key: null, dir: 1 },
   banca: { key: null, dir: 1 },
+  casa: { key: null, dir: 1 },
 };
 
 function applySort(list, state, getter) {
@@ -572,6 +574,11 @@ const BANCA_HEADERS = [
   ["th-banca-contas", "contas"],
   ["th-banca-total", "banca"],
   ["th-banca-lucro", "lucro"],
+];
+const CASA_HEADERS = [
+  ["th-casa-nome", "casa"],
+  ["th-casa-apostas", "apostas"],
+  ["th-casa-lucro", "lucro"],
 ];
 
 function setupSortableHeaders(headers, stateKey, rerenderFn) {
@@ -1242,11 +1249,11 @@ async function loadBancas() {
   if (!ACTIVE_MES) {
     document.getElementById("banca-total").textContent = "—";
     document.getElementById("banca-total-foot").textContent = "Selecione um mês no filtro";
-    tbody.innerHTML = `<tr><td colspan="5">Selecione um mês no filtro pra ver as bancas desse mês.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4">Selecione um mês no filtro pra ver as bancas desse mês.</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = `<tr><td colspan="5">Carregando...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="4">Carregando...</td></tr>`;
   try {
     const res = await fetch(`/api/bancas/${encodeURIComponent(ACTIVE_MES)}`);
     const data = await res.json();
@@ -1255,7 +1262,7 @@ async function loadBancas() {
     LAST_BANCAS_CONTAS = data.contas;
     renderBancasTable();
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="5">Erro: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4">Erro: ${err.message}</td></tr>`;
   }
 }
 
@@ -1265,18 +1272,29 @@ function renderBancasTable() {
 
   const linhasOrdenadas = SORT_STATE.banca.key
     ? applySort(LAST_BANCAS_RESUMO, SORT_STATE.banca, (l, k) => l[k])
-    : LAST_BANCAS_RESUMO.slice().sort((a, b) => b.banca - a.banca);
+    : LAST_BANCAS_RESUMO.slice().sort((a, b) => b.lucro - a.lucro);
 
   const totalGeral = LAST_BANCAS_RESUMO.reduce((s, r) => s + r.banca, 0);
+  const lucroGeral = LAST_BANCAS_RESUMO.reduce((s, r) => s + (r.lucro || 0), 0);
   const lucroPorCasaPlan = lucroPlanilhamentoPorCasa();
   const casasComConta = LAST_BANCAS_RESUMO.filter(r => r.contas > 0).length;
+  const casasComLucro = LAST_BANCAS_RESUMO.filter(r => (r.lucro || 0) !== 0).length;
+
+  const lucroEl = document.getElementById("lucro-total");
+  lucroEl.textContent = lucroGeral.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  lucroEl.className = "card-value" + (lucroGeral > 0 ? " positive" : lucroGeral < 0 ? " negative" : "");
+  document.getElementById("lucro-total-foot").textContent =
+    `${casasComLucro} casa${casasComLucro === 1 ? "" : "s"} com movimento`;
+  document.getElementById("lucro-total-card").className =
+    "card" + (lucroGeral > 0 ? " card-highlight" : lucroGeral < 0 ? " card-highlight-red" : "");
+
   document.getElementById("banca-total").textContent =
     totalGeral.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   document.getElementById("banca-total-foot").textContent =
     `${casasComConta} casa${casasComConta === 1 ? "" : "s"} ativa${casasComConta === 1 ? "" : "s"}`;
 
   if (!linhasOrdenadas.length) {
-    tbody.innerHTML = `<tr><td colspan="5">Não encontrei a tabela de bancas nessa aba.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4">Não encontrei a tabela de bancas nessa aba.</td></tr>`;
     return;
   }
 
@@ -1290,15 +1308,16 @@ function renderBancasTable() {
     const fmtR = n => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     const alertaHtml = bate
       ? ""
-      : `<span class="banca-alerta" onclick="event.stopPropagation(); abrirAjusteBanca('${escJs(l.casa)}')" title="Planilhamento: ${fmtR(lucroPlan)} — diferença de ${fmtR(Math.abs(dif))}. Clique para ajustar.">⚠</span>`;
+      : `<span class="banca-alerta" onclick="event.stopPropagation(); abrirAjusteBanca('${escJs(l.casa)}')" title="Planilhamento: ${fmtR(lucroPlan)} — diferença de ${fmtR(Math.abs(dif))}. Clique para ajustar.">${ICON_ALERTA}</span>`;
 
     const rowHtml = `
       <tr class="banca-casa-row" onclick="toggleBancaCasa('${escJs(l.casa)}')">
         <td data-label="Casa">${l.casa}</td>
         <td data-label="Contas ativas">${l.contas} conta${l.contas === 1 ? "" : "s"} ativa${l.contas === 1 ? "" : "s"}</td>
         <td data-label="Banca somada"><b>${l.banca.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</b></td>
-        <td data-label="Lucro" class="${lucroClass}"><b>${lucro.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</b></td>
-        <td data-label="" class="td-alerta">${alertaHtml}</td>
+        <td data-label="Lucro" class="banca-lucro-cell">
+          <b class="${lucroClass}">${lucro.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</b>${alertaHtml}
+        </td>
       </tr>
     `;
     if (EXPANDED_CASA !== l.casa) return rowHtml;
@@ -1306,7 +1325,7 @@ function renderBancasTable() {
     const contasDaCasa = LAST_BANCAS_CONTAS.filter(c => c.casa === l.casa);
     const detailHtml = `
       <tr class="banca-detail-row">
-        <td colspan="5">
+        <td colspan="4">
           <div class="banca-detail-inner">
             ${contasDaCasa.map(c => `
               <div class="banca-conta-line">
@@ -1669,6 +1688,8 @@ function renderAll() {
 
   renderChart(resolved);
   renderCasaSummary(bets);
+  renderTipsterSummary(bets);
+  renderTipoSummary(bets);
   renderHistorico();
   if (CURRENT_VIEW === "ranking") renderRanking();
   if (CURRENT_VIEW === "bancas") loadBancas();
@@ -1691,9 +1712,12 @@ function renderCasaSummary(bets) {
     }
   });
 
-  const linhas = Object.entries(porCasa)
-    .map(([casa, c]) => ({ casa, ...c }))
-    .sort((a, b) => b.lucro - a.lucro);
+  const linhas = applySort(
+    Object.entries(porCasa).map(([casa, c]) => ({ casa, ...c })),
+    SORT_STATE.casa,
+    (l, k) => l[k]
+  );
+  if (!SORT_STATE.casa.key) linhas.sort((a, b) => b.lucro - a.lucro);
 
   if (!linhas.length) {
     tbody.innerHTML = `<tr><td colspan="3">Sem apostas nesse filtro ainda.</td></tr>`;
@@ -1706,6 +1730,90 @@ function renderCasaSummary(bets) {
       <tr>
         <td>${l.casa}</td>
         <td>${l.apostas}</td>
+        <td class="${cls}"><b>${fmtDual(l.lucro, l.lucroReais, true)}</b></td>
+      </tr>
+    `;
+  }).join("");
+}
+
+// ---------- Tipsters do mês (Visão geral) ----------
+function renderTipsterSummary(bets) {
+  const tbody = document.getElementById("tipster-summary-body");
+  if (!tbody) return;
+
+  const porTipster = {};
+  bets.forEach(b => {
+    const nome = (b.tipster || "").trim();
+    if (!nome) return;
+    if (!porTipster[nome]) porTipster[nome] = { tips: 0, lucro: 0, lucroReais: 0 };
+    const t = porTipster[nome];
+    t.tips += 1;
+    if (isResolved(b)) {
+      t.lucro += b.lucro_uni;
+      t.lucroReais += b.lucro_reais;
+    }
+  });
+
+  const linhas = Object.entries(porTipster)
+    .map(([tipster, t]) => ({ tipster, ...t }))
+    .sort((a, b) => a.tipster.localeCompare(b.tipster, "pt-BR", { sensitivity: "base" }));
+
+  if (!linhas.length) {
+    tbody.innerHTML = `<tr><td colspan="3">Sem apostas nesse filtro ainda.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = linhas.map(l => {
+    const cls = l.lucro > 0 ? "positive" : l.lucro < 0 ? "negative" : "";
+    return `
+      <tr>
+        <td>${l.tipster}</td>
+        <td>${l.tips}</td>
+        <td class="${cls}"><b>${fmtDual(l.lucro, l.lucroReais, true)}</b></td>
+      </tr>
+    `;
+  }).join("");
+}
+
+// ---------- Pré / Live (Visão geral) ----------
+// A coluna Tipo da planilha fica em branco pros tipsters que mandam os dois.
+function renderTipoSummary(bets) {
+  const tbody = document.getElementById("tipo-summary-body");
+  if (!tbody) return;
+
+  const buckets = {
+    "Pré": { tips: 0, lucro: 0, lucroReais: 0 },
+    "Live": { tips: 0, lucro: 0, lucroReais: 0 },
+    "Sem tipo": { tips: 0, lucro: 0, lucroReais: 0 },
+  };
+
+  bets.forEach(b => {
+    const bruto = stripAcentos((b.tipo || "").trim()).toLowerCase();
+    const chave = bruto.startsWith("pre") ? "Pré" : (bruto === "live" ? "Live" : "Sem tipo");
+    const t = buckets[chave];
+    t.tips += 1;
+    if (isResolved(b)) {
+      t.lucro += b.lucro_uni;
+      t.lucroReais += b.lucro_reais;
+    }
+  });
+
+  // "Sem tipo" só aparece se existir de fato
+  const linhas = Object.entries(buckets)
+    .filter(([nome, t]) => nome !== "Sem tipo" || t.tips > 0)
+    .map(([nome, t]) => ({ nome, ...t }));
+
+  if (!linhas.some(l => l.tips > 0)) {
+    tbody.innerHTML = `<tr><td colspan="3">Sem apostas nesse filtro ainda.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = linhas.map(l => {
+    const cls = l.lucro > 0 ? "positive" : l.lucro < 0 ? "negative" : "";
+    return `
+      <tr>
+        <td>${l.nome}</td>
+        <td>${l.tips}</td>
         <td class="${cls}"><b>${fmtDual(l.lucro, l.lucroReais, true)}</b></td>
       </tr>
     `;
@@ -1870,6 +1978,7 @@ document.getElementById("refresh-btn").addEventListener("click", () => loadData(
 setupSortableHeaders(HIST_HEADERS, "hist", renderHistorico);
 setupSortableHeaders(RANK_HEADERS, "rank", renderRanking);
 setupSortableHeaders(BANCA_HEADERS, "banca", renderBancasTable);
+setupSortableHeaders(CASA_HEADERS, "casa", () => renderCasaSummary(currentBets()));
 
 // aplica o tema salvo antes de tudo — migra do sistema antigo (só claro/escuro)
 // se a pessoa nunca escolheu um tema novo ainda
