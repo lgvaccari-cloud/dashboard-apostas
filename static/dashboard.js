@@ -15,6 +15,20 @@ let ALL_BETS = [];
 let ACTIVE_TIPSTER = null;
 let ACTIVE_CASA = null;
 let NEW_BET_TIPO = "";
+// Cards recolhidos no Histórico, por "mês::linha" — sobrevive a re-renders
+// (troca de filtro, resolver aposta) dentro da mesma sessão.
+const COLLAPSED_CARDS = new Set();
+
+function cardKey(b) {
+  return `${b.mes}::${b.row}`;
+}
+
+function toggleCardCollapse(ev, key) {
+  if (COLLAPSED_CARDS.has(key)) COLLAPSED_CARDS.delete(key);
+  else COLLAPSED_CARDS.add(key);
+  const card = ev.currentTarget.closest(".bet-card");
+  if (card) card.classList.toggle("collapsed");
+}
 let ACTIVE_MES = null;
 let ONLY_PENDING = false;
 let ONLY_TODAY = false;
@@ -1021,11 +1035,15 @@ function renderBetsCards(bets) {
            <button class="resolve-btn void" title="Void" onclick="resolveBetByIndex(${idx}, 'Void')">–</button>
          </div>${acoesEEditar}`;
 
+    const key = cardKey(b);
+    const collapsedClass = COLLAPSED_CARDS.has(key) ? " collapsed" : "";
+
     return `
-      <div class="bet-card">
-        <div class="bet-card-header">
+      <div class="bet-card${collapsedClass}">
+        <div class="bet-card-header" onclick="toggleCardCollapse(event, '${escJs(key)}')">
           <span class="bet-card-title">${b.stake ? fmtDual(b.stake, b.stake_reais, false) : "—"} - ${b.tipster || "—"}</span>
           <span class="bet-card-badge ${resultHeaderClass(b.resultado)}">${resultBadgeLabel(b.resultado)}</span>
+          <span class="bet-card-chevron">▾</span>
         </div>
         <div class="bet-card-body">
           <div class="bet-card-jogo">${jogo}</div>

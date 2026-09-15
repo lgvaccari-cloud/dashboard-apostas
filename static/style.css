@@ -601,7 +601,21 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   padding: 13px 16px;
   background: var(--sidebar-bg);
   border-radius: 13px 13px 0 0;
+  cursor: pointer;
+  user-select: none;
 }
+.bet-card-header:hover { filter: brightness(1.15); }
+.bet-card-chevron {
+  flex-shrink: 0;
+  color: #eef1f6;
+  opacity: 0.55;
+  font-size: 12px;
+  transition: transform 0.18s ease;
+}
+.bet-card.collapsed .bet-card-header { border-radius: 13px; }
+.bet-card.collapsed .bet-card-chevron { transform: rotate(-90deg); }
+.bet-card.collapsed .bet-card-body,
+.bet-card.collapsed .bet-card-footer { display: none; }
 .bet-card-title {
   font-size: 14.5px;
   font-weight: 600;
