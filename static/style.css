@@ -1105,9 +1105,15 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   #view-bancas .cards-row { grid-template-columns: 1fr !important; }
   .modal-grid { grid-template-columns: 1fr; }
   .modal-span-2 { grid-column: span 1; }
-  .filters-row { gap: 10px; }
-  .filter-group { flex: 1 1 140px; }
-  .mobile-filter-select { min-width: 0; width: 100%; }
+  /* três dropdowns lado a lado mesmo em tela estreita — economiza altura */
+  .filters-row { gap: 8px; flex-wrap: nowrap; }
+  .filter-group { flex: 1 1 0; min-width: 0; }
+  .mobile-filter-select {
+    min-width: 0;
+    width: 100%;
+    padding: 9px 8px;
+    text-overflow: ellipsis;
+  }
 
   /* nunca deixa o Safari dar zoom automático ao focar um campo (precisa de 16px+) */
   .edit-input, .mobile-filter-select, .modal-grid input, .modal-grid select {

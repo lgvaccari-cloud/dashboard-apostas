@@ -1647,10 +1647,16 @@ function renderAll() {
   liquidoEl.className = "card-value" + (resultadoLiquido > 0 ? " positive" : resultadoLiquido < 0 ? " negative" : "");
   document.getElementById("card-liquido-label").textContent = ACTIVE_MES ? "Total no mês" : "Total no ano";
 
-  const roiDaPlanilha = ACTIVE_MES ? getRoiPctFromSheet(ACTIVE_MES) : null;
+  // O ROI do bloco de resumo da planilha é sempre do mês inteiro. Só dá pra
+  // usar ele quando não há filtro de tipster nem de casa — senão o número
+  // fica congelado no geral do mês em vez de refletir o que está filtrado.
+  const semFiltroExtra = !ACTIVE_TIPSTER && !ACTIVE_CASA;
+  const roiDaPlanilha = ACTIVE_MES && semFiltroExtra ? getRoiPctFromSheet(ACTIVE_MES) : null;
   document.getElementById("metric-liquido-foot").textContent = roiDaPlanilha
     ? `${roiDaPlanilha} de ROI`
-    : `ROI sobre ${fmtDual(volumeApostadoResolved, volumeApostadoResolvedReais, false)} resolvido`;
+    : (volumeApostadoResolved > 0
+        ? `${fmtPct(roi)} de ROI`
+        : `ROI sobre ${fmtDual(volumeApostadoResolved, volumeApostadoResolvedReais, false)} resolvido`);
 
   const emAberto = pending.reduce((s, b) => s + b.stake, 0);
   const emAbertoReais = pending.reduce((s, b) => s + b.stake_reais, 0);
