@@ -154,6 +154,29 @@ function casaBadgeHtml(casa) {
   return `<span class="bet-card-casa-chip"${chipStyle}><img src="/static/logos/${slug}.png" alt="${esc(casa)}" title="${esc(casa)}" class="bet-card-casa-logo" onerror="this.parentElement.outerHTML='${fallback}'"></span>`;
 }
 
+// Formata o horário digitado pra "HH:MM" quando a pessoa sai do campo —
+// aceita puro dígitos, sem precisar digitar o ":" ("0900" -> "09:00",
+// "1240" -> "12:40", "930" -> "09:30", "9" -> "09:00"). Não mexe em campo
+// vazio, e trava hora/minuto em valores válidos (23/59 no máximo).
+function formatHorarioInput(el) {
+  const v = (el.value || "").trim();
+  if (!v) return;
+  const digitos = v.replace(/\D/g, "");
+  if (!digitos) return;
+  let h, m;
+  if (digitos.length <= 2) { h = digitos; m = "00"; }
+  else if (digitos.length === 3) { h = "0" + digitos[0]; m = digitos.slice(1); }
+  else { h = digitos.slice(0, 2); m = digitos.slice(2, 4); }
+  h = String(Math.min(23, parseInt(h, 10) || 0)).padStart(2, "0");
+  m = String(Math.min(59, parseInt(m, 10) || 0)).padStart(2, "0");
+  el.value = `${h}:${m}`;
+}
+
+function horaAtualHHMM() {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
 function fmtOdd(odd) {
   const tres = Number(odd).toFixed(3);
   return tres.endsWith("0") ? tres.slice(0, -1) : tres;
@@ -869,7 +892,7 @@ function renderHistorico() {
         <tr>
           <td data-label="Data">
             <input class="edit-input small" id="edit-data-${idx}-tbl" value="${esc(b.data)}">
-            <input class="edit-input small" id="edit-horario-${idx}-tbl" value="${esc(b.horario)}" placeholder="Horário">
+            <input class="edit-input small" id="edit-horario-${idx}-tbl" value="${esc(b.horario)}" placeholder="Horário" onblur="formatHorarioInput(this)">
           </td>
           <td data-label="Casa"><input class="edit-input" id="edit-casa-${idx}-tbl" value="${esc(b.casa)}"></td>
           <td data-label="Tipster"><input class="edit-input" id="edit-tipster-${idx}-tbl" value="${esc(b.tipster)}"></td>
@@ -1064,7 +1087,7 @@ function renderBetsCards(bets) {
             <div style="display:flex; gap:8px; flex:1;">
               <input class="edit-input" id="edit-casa-${idx}-card" value="${esc(b.casa)}" placeholder="Casa" style="flex:1;">
               <input class="edit-input small" id="edit-data-${idx}-card" value="${esc(b.data)}" placeholder="Data">
-              <input class="edit-input small" id="edit-horario-${idx}-card" value="${esc(b.horario)}" placeholder="Horário">
+              <input class="edit-input small" id="edit-horario-${idx}-card" value="${esc(b.horario)}" placeholder="Horário" onblur="formatHorarioInput(this)">
             </div>
             <div class="row-actions">
               <button class="row-action-btn save" title="Salvar" onclick="saveEdit(${idx})">✓</button>
@@ -1358,10 +1381,11 @@ function handlePrintResult(result, mes) {
 // confiança), pede pra preencher aqui antes de fechar a janela, em vez de
 // fechar direto e depender de caçar cada linha depois pra editar.
 function renderHorarioPendenteForm(mes, pendentes, linhasHtml) {
+  const horaAgora = horaAtualHHMM();
   const camposHtml = pendentes.map((p, i) => `
     <div class="horario-pendente-item">
       <span class="horario-pendente-label" title="${esc(p.descricao)}">${esc(p.descricao)}</span>
-      <input type="text" class="edit-input small" id="horario-pendente-${i}" placeholder="14:30">
+      <input type="text" class="edit-input small" id="horario-pendente-${i}" value="${horaAgora}" onblur="formatHorarioInput(this)">
     </div>
   `).join("");
 
