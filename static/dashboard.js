@@ -1428,9 +1428,48 @@ function renderAll() {
     ACTIVE_TIPSTER ? `Resultado acumulado (${ACTIVE_TIPSTER})` : "Resultado acumulado";
 
   renderChart(resolved);
+  renderCasaSummary(bets);
   renderHistorico();
   if (CURRENT_VIEW === "ranking") renderRanking();
   if (CURRENT_VIEW === "bancas") loadBancas();
+}
+
+// ---------- Lucro por casa (Visão geral) ----------
+function renderCasaSummary(bets) {
+  const tbody = document.getElementById("casa-summary-body");
+  if (!tbody) return;
+
+  const porCasa = {};
+  bets.forEach(b => {
+    if (!b.casa) return;
+    if (!porCasa[b.casa]) porCasa[b.casa] = { apostas: 0, lucro: 0, lucroReais: 0 };
+    const c = porCasa[b.casa];
+    c.apostas += 1;
+    if (isResolved(b)) {
+      c.lucro += b.lucro_uni;
+      c.lucroReais += b.lucro_reais;
+    }
+  });
+
+  const linhas = Object.entries(porCasa)
+    .map(([casa, c]) => ({ casa, ...c }))
+    .sort((a, b) => b.lucro - a.lucro);
+
+  if (!linhas.length) {
+    tbody.innerHTML = `<tr><td colspan="3">Sem apostas nesse filtro ainda.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = linhas.map(l => {
+    const cls = l.lucro > 0 ? "positive" : l.lucro < 0 ? "negative" : "";
+    return `
+      <tr>
+        <td>${l.casa}</td>
+        <td>${l.apostas}</td>
+        <td class="${cls}"><b>${fmtDual(l.lucro, l.lucroReais, true)}</b></td>
+      </tr>
+    `;
+  }).join("");
 }
 
 // ---------- Gráfico ----------

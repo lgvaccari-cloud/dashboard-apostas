@@ -268,6 +268,12 @@ body {
 #view-bancas .bets-table th:nth-child(2), #view-bancas .bets-table td:nth-child(2) { width: 150px; }
 #view-bancas .bets-table th:nth-child(3), #view-bancas .bets-table td:nth-child(3) { width: 150px; }
 
+/* Lucro por casa (Visão geral): Casa, Apostas, Lucro */
+#casa-summary-table { min-width: 0; }
+#casa-summary-table th:nth-child(1), #casa-summary-table td:nth-child(1) { width: auto; }
+#casa-summary-table th:nth-child(2), #casa-summary-table td:nth-child(2) { width: 110px; }
+#casa-summary-table th:nth-child(3), #casa-summary-table td:nth-child(3) { width: 140px; }
+
 .casa-cell { display: inline-flex; align-items: center; gap: 8px; }
 .casa-badge {
   display: inline-flex;
