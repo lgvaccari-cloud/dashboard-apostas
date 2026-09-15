@@ -1151,3 +1151,36 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   cursor: help;
   line-height: 1;
 }
+
+/* Modal "Bater a banca" */
+.ajuste-resumo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.ajuste-resumo > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 14px;
+}
+.ajuste-resumo span { color: var(--muted); }
+.ajuste-texto { font-size: 14px; color: var(--text); margin: 0 0 10px; }
+.ajuste-aposta {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+.ajuste-aposta-titulo { font-size: 14px; font-weight: 600; color: var(--text); }
+.ajuste-aposta-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.ajuste-aviso {
+  font-size: 13px;
+  color: #f0a500;
+  background: rgba(240, 165, 0, 0.1);
+  border-radius: 8px;
+  padding: 9px 11px;
+  margin: 0 0 10px;
+}

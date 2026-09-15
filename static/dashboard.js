@@ -1290,7 +1290,7 @@ function renderBancasTable() {
     const fmtR = n => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     const alertaHtml = bate
       ? ""
-      : `<span class="banca-alerta" title="Planilhamento: ${fmtR(lucroPlan)} — diferença de ${fmtR(Math.abs(dif))}">⚠</span>`;
+      : `<span class="banca-alerta" onclick="event.stopPropagation(); abrirAjusteBanca('${escJs(l.casa)}')" title="Planilhamento: ${fmtR(lucroPlan)} — diferença de ${fmtR(Math.abs(dif))}. Clique para ajustar.">⚠</span>`;
 
     const rowHtml = `
       <tr class="banca-casa-row" onclick="toggleBancaCasa('${escJs(l.casa)}')">
@@ -1323,8 +1323,176 @@ function renderBancasTable() {
   }).join("");
 }
 
-function toggleBancaCasa(casa) {
-  EXPANDED_CASA = (EXPANDED_CASA === casa) ? null : casa;
+// ---------- Ajuste de banca (clique no ⚠) ----------
+let AJUSTE_PENDENTE = null;
+
+function fmtBRLSimples(n) {
+  return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+// A "última" aposta é a mais recente por data; empate é desempatado pela
+// linha da planilha (linha maior = registrada depois).
+function ultimaApostaPorResultado(casa, resultado) {
+  const candidatas = ALL_BETS.filter(b =>
+    b.casa === casa &&
+    b.mes === ACTIVE_MES &&
+    (b.resultado || "").toLowerCase() === resultado
+  );
+  candidatas.sort((a, b) => {
+    const da = a.data_iso || "";
+    const db = b.data_iso || "";
+    if (da !== db) return da < db ? -1 : 1;
+    return a.row - b.row;
+  });
+  return candidatas.length ? candidatas[candidatas.length - 1] : null;
+}
+
+function calcularAjusteBanca(casa) {
+  const linha = LAST_BANCAS_RESUMO.find(r => r.casa === casa);
+  const lucroBancas = linha ? (linha.lucro || 0) : 0;
+  const lucroPlan = lucroPlanilhamentoPorCasa()[casa] || 0;
+  const dif = lucroBancas - lucroPlan;
+  const base = { casa, lucroBancas, lucroPlan, dif };
+
+  if (dif > 0) {
+    // falta lucro no planilhamento -> sobe a odd da última green
+    const aposta = ultimaApostaPorResultado(casa, "green");
+    if (!aposta) return { ...base, erro: "Não achei nenhuma aposta Green dessa casa no mês pra ajustar." };
+    if (!aposta.stake_reais) return { ...base, erro: "A última Green dessa casa está com valor apostado zerado — não dá pra ajustar pela odd." };
+    const oddExata = aposta.odd + dif / aposta.stake_reais;
+    const sobraCom = casas => {
+      const v = Number(oddExata.toFixed(casas));
+      return dif - (aposta.stake_reais * (v - 1) - aposta.lucro_reais);
+    };
+    // 2 casas deixa a odd com cara de odd; só usa 4 se 2 não fecharem a conta
+    const casas = Math.abs(sobraCom(2)) <= TOLERANCIA_LUCRO ? 2 : 4;
+    const novaOdd = Number(oddExata.toFixed(casas));
+    const lucroNovo = aposta.stake_reais * (novaOdd - 1);
+    return {
+      ...base,
+      aposta,
+      campo: "odd",
+      valorAtual: aposta.odd,
+      valorNovo: novaOdd,
+      sobra: dif - (lucroNovo - aposta.lucro_reais),
+      oddInvalida: novaOdd < 1.01,
+      updates: { odd: String(novaOdd).replace(".", ",") },
+    };
+  }
+
+  // sobra lucro no planilhamento -> aumenta a stake da última red
+  const falta = Math.abs(dif);
+  const aposta = ultimaApostaPorResultado(casa, "red");
+  if (!aposta) return { ...base, erro: "Não achei nenhuma aposta Red dessa casa no mês pra ajustar." };
+  const novaStake = Number((aposta.stake + falta / window.STAKE_BASE).toFixed(4));
+  const novoValor = novaStake * window.STAKE_BASE;
+  return {
+    ...base,
+    aposta,
+    campo: "stake",
+    valorAtual: aposta.stake,
+    valorNovo: novaStake,
+    valorAtualReais: aposta.stake_reais,
+    valorNovoReais: novoValor,
+    sobra: dif + (novoValor - aposta.stake_reais),
+    oddInvalida: false,
+    updates: { stake: novaStake.toFixed(4).replace(".", ",") },
+  };
+}
+
+function abrirAjusteBanca(casa) {
+  const calc = calcularAjusteBanca(casa);
+  const body = document.getElementById("ajuste-body");
+  const btn = document.getElementById("ajuste-confirm");
+
+  const resumo = `
+    <div class="ajuste-resumo">
+      <div><span>Banca</span><b>${fmtBRLSimples(calc.lucroBancas)}</b></div>
+      <div><span>Planilhamento</span><b>${fmtBRLSimples(calc.lucroPlan)}</b></div>
+      <div><span>Diferença</span><b class="${calc.dif > 0 ? "positive" : "negative"}">${fmtBRLSimples(calc.dif)}</b></div>
+    </div>
+  `;
+
+  if (calc.erro) {
+    AJUSTE_PENDENTE = null;
+    body.innerHTML = resumo + `<p class="ajuste-aviso">${calc.erro}</p>`;
+    btn.style.display = "none";
+    document.getElementById("ajuste-overlay").style.display = "flex";
+    return;
+  }
+
+  AJUSTE_PENDENTE = calc;
+  const a = calc.aposta;
+  const linhaValor = calc.campo === "odd"
+    ? `<div><span>Odd</span><b>${fmtOdd(calc.valorAtual)} &rarr; ${fmtOdd(calc.valorNovo)}</b></div>`
+    : `<div><span>Valor apostado</span><b>${fmtBRLSimples(calc.valorAtualReais)} &rarr; ${fmtBRLSimples(calc.valorNovoReais)}</b></div>`;
+
+  const avisos = [];
+  if (calc.oddInvalida) {
+    avisos.push("A odd resultante fica abaixo de 1,01, o que não existe na prática. Confirme só se souber o que está fazendo.");
+  }
+  if (Math.abs(calc.sobra) > TOLERANCIA_LUCRO) {
+    avisos.push(`Mesmo com o ajuste vai sobrar ${fmtBRLSimples(Math.abs(calc.sobra))} de diferença — o arredondamento não cobre tudo.`);
+  }
+  if (Math.abs(calc.dif) > 500) {
+    avisos.push("Diferença grande pra jogar numa aposta só. Vale checar antes se não é banca desatualizada ou aposta fora do planilhamento.");
+  }
+
+  body.innerHTML = resumo + `
+    <p class="ajuste-texto">Vou alterar ${calc.campo === "odd" ? "a odd da última aposta <b>Green</b>" : "o valor da última aposta <b>Red</b>"} da ${esc(casa)}:</p>
+    <div class="ajuste-aposta">
+      <div class="ajuste-aposta-titulo">${a.aposta || "—"}</div>
+      <div class="ajuste-aposta-sub">${a.data || "—"} · ${a.tipster || "sem tipster"}</div>
+    </div>
+    <div class="ajuste-resumo">${linhaValor}</div>
+    ${avisos.map(t => `<p class="ajuste-aviso">${t}</p>`).join("")}
+  `;
+  btn.style.display = "";
+  btn.disabled = false;
+  btn.textContent = "Confirmar ajuste";
+  document.getElementById("ajuste-overlay").style.display = "flex";
+}
+
+function fecharAjusteBanca() {
+  document.getElementById("ajuste-overlay").style.display = "none";
+  AJUSTE_PENDENTE = null;
+}
+
+async function confirmarAjusteBanca() {
+  if (!AJUSTE_PENDENTE) return;
+  const calc = AJUSTE_PENDENTE;
+  const btn = document.getElementById("ajuste-confirm");
+  btn.disabled = true;
+  btn.textContent = "Salvando...";
+  try {
+    const res = await fetch("/api/update_bet", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mes: calc.aposta.mes, row: calc.aposta.row, updates: calc.updates }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Erro ao salvar");
+    fecharAjusteBanca();
+    setTimeout(async () => {
+      await refreshMes(calc.aposta.mes);
+      await loadBancas();
+    }, 900);
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = "Confirmar ajuste";
+    document.getElementById("ajuste-body").insertAdjacentHTML(
+      "beforeend", `<p class="ajuste-aviso">Não consegui salvar: ${err.message}</p>`
+    );
+  }
+}
+
+document.getElementById("ajuste-cancel").addEventListener("click", fecharAjusteBanca);
+document.getElementById("ajuste-confirm").addEventListener("click", confirmarAjusteBanca);
+document.getElementById("ajuste-overlay").addEventListener("click", (e) => {
+  if (e.target.id === "ajuste-overlay") fecharAjusteBanca();
+});
+
+function toggleBancaCasa(casa) {  EXPANDED_CASA = (EXPANDED_CASA === casa) ? null : casa;
   renderBancasTable();
 }
 
