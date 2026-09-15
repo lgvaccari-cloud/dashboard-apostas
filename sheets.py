@@ -118,11 +118,35 @@ def _find_label_value(rows, label):
     return None
 
 
-def _parse_bets_from_rows(rows, mes_label):
+def _raw_cell(raw_rows, row_idx, col_idx):
+    """Lê uma célula de `raw_rows` (leitura UNFORMATTED_VALUE) com segurança
+    — devolve None se a linha/coluna não existir nesse recorte."""
+    if raw_rows is None or row_idx >= len(raw_rows):
+        return None
+    row = raw_rows[row_idx]
+    if col_idx >= len(row):
+        return None
+    return row[col_idx]
+
+
+# Colunas numéricas onde a formatação de exibição da planilha (ex: só 2 casas
+# decimais na coluna Stake) pode arredondar o valor ANTES da gente ler —
+# "0,375" vira o texto "0,38" na leitura formatada, e 0.38*1000 dá 380 em vez
+# de 375. Pra essas colunas, preferimos o valor não-formatado quando
+# disponível (número puro, sem arredondamento de exibição).
+_CAMPOS_PRECISOS = {"stake", "odd", "uni", "aposta_reais", "lucro"}
+
+
+def _parse_bets_from_rows(rows, mes_label, raw_rows=None):
     """Extrai as apostas de uma aba já lida (rows), marcando cada aposta com
     o nome da aba de origem (mes_label) e a linha absoluta na planilha (pra
     dar pra editar/marcar resultado depois). Retorna [] se a aba não tiver a
-    tabela de apostas (sem cabeçalho 'Tipster')."""
+    tabela de apostas (sem cabeçalho 'Tipster').
+
+    `raw_rows`, se fornecido, é a MESMA aba lida com UNFORMATTED_VALUE — usado
+    só para os campos numéricos (ver _CAMPOS_PRECISOS), pra não perder casas
+    decimais por causa da formatação de exibição da célula.
+    """
     data_start_row, data_col = _find_table_start(rows)
     if data_col is None:
         return []
@@ -138,6 +162,12 @@ def _parse_bets_from_rows(rows, mes_label):
 
         if not record["data"].strip() and not record["casa"].strip():
             continue  # linha vazia
+
+        abs_row_idx = data_start_row + i
+        for campo in _CAMPOS_PRECISOS:
+            bruto = _raw_cell(raw_rows, abs_row_idx, data_col + COLUMNS.index(campo))
+            if bruto not in (None, ""):
+                record[campo] = bruto
 
         parsed_date = _parse_date(record["data"])
         sheet_row = data_start_row + i + 1  # linha absoluta na planilha (1-based)
@@ -195,10 +225,17 @@ def fetch_bets(force=False):
     batch = sh.values_batch_get(ranges)
     value_ranges = batch.get("valueRanges", [])
 
+    # segunda leitura, sem a formatação de exibição de cada célula — usada só
+    # pros campos numéricos (ver _CAMPOS_PRECISOS), pra não perder casas
+    # decimais que a formatação da planilha (ex: Stake com 2 casas) esconde.
+    raw_batch = sh.values_batch_get(ranges, params={"valueRenderOption": "UNFORMATTED_VALUE"})
+    raw_value_ranges = raw_batch.get("valueRanges", [])
+
     all_bets = []
-    for title, value_range in zip(titles, value_ranges):
+    for title, value_range, raw_value_range in zip(titles, value_ranges, raw_value_ranges):
         rows = value_range.get("values", [])
-        all_bets.extend(_parse_bets_from_rows(rows, title))
+        raw_rows = raw_value_range.get("values", [])
+        all_bets.extend(_parse_bets_from_rows(rows, title, raw_rows))
 
     if not all_bets:
         raise RuntimeError(
@@ -357,7 +394,8 @@ def fetch_bets_for_mes(mes):
     sh = client.open_by_key(sheet_id)
     ws = sh.worksheet(mes)
     rows = ws.get_all_values()
-    return _parse_bets_from_rows(rows, mes)
+    raw_rows = ws.get_all_values(value_render_option=gspread.utils.ValueRenderOption.unformatted)
+    return _parse_bets_from_rows(rows, mes, raw_rows)
 
 
 def update_bet(mes, row, updates):
