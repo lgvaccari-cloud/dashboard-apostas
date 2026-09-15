@@ -177,12 +177,17 @@
           <button class="chip" id="filter-today">Hoje</button>
           <button class="chip" id="filter-yesterday">Ontem</button>
           <button class="chip" id="filter-future">Futuro</button>
+          <div class="hist-view-toggle">
+            <button class="toggle-btn active" id="hist-view-cards-btn">Cards</button>
+            <button class="toggle-btn" id="hist-view-table-btn">Tabela</button>
+          </div>
         </div>
         <div class="pending-banner" id="pending-banner">
           Mostrando só as apostas pendentes.
           <button id="clear-pending-filter" class="clear-link" style="display:inline">Ver todas</button>
         </div>
-        <div class="card table-card">
+        <div class="bets-cards-grid" id="bets-cards-grid"></div>
+        <div class="card table-card" id="hist-table-wrap" style="display:none">
           <table class="bets-table">
             <thead>
               <tr>
