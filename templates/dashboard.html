@@ -353,6 +353,9 @@
           <label>Data
             <input type="text" id="new-bet-data" placeholder="dd/mm/aaaa">
           </label>
+          <label>Horário
+            <input type="text" id="new-bet-horario" placeholder="14:30">
+          </label>
           <label>Casa
             <input type="text" id="new-bet-casa" placeholder="Bet365">
           </label>
@@ -375,7 +378,8 @@
             <input type="text" id="new-bet-odd" placeholder="1,85">
           </label>
           <label>Stake (unidades)
-            <input type="text" id="new-bet-stake" placeholder="0,75">
+            <input type="text" id="new-bet-stake" placeholder="0,75" oninput="syncFromUnits('new-bet-stake', 'new-bet-stake-reais')">
+            <input type="text" id="new-bet-stake-reais" class="stake-reais-input" placeholder="ou digite em R$" oninput="syncFromReais('new-bet-stake-reais', 'new-bet-stake')">
           </label>
           <label>Resultado
             <select id="new-bet-resultado">
