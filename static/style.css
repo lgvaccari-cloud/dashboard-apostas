@@ -1413,3 +1413,42 @@ th.col-center, td.col-center { text-align: center !important; }
   color: var(--muted);
   font-size: 11px;
 }
+
+/* Barra de busca por time no Histórico */
+.hist-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+}
+.hist-search-icon { font-size: 13px; opacity: 0.6; flex-shrink: 0; }
+.hist-search-bar input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  min-width: 0;
+}
+.hist-search-bar input::placeholder { color: var(--muted); }
+.hist-search-clear {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hist-search-clear:hover { color: var(--text); }

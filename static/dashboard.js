@@ -21,6 +21,7 @@ let ONLY_TODAY = false;
 let ONLY_YESTERDAY = false;
 let ONLY_PENDING_TODAY = false;
 let ONLY_PENDING_FUTURE = false;
+let SEARCH_QUERY = "";
 let RANK_ONLY_TODAY = false;
 let RANK_ONLY_YESTERDAY = false;
 let AUTO_MES_APPLIED = false;
@@ -701,6 +702,27 @@ document.getElementById("filter-yesterday").addEventListener("click", () => togg
 document.getElementById("filter-pending-today").addEventListener("click", () => toggleQuickFilter("pendingToday"));
 document.getElementById("filter-pending-future").addEventListener("click", () => toggleQuickFilter("pendingFuture"));
 
+// Busca por time/jogo no Histórico — filtra o texto da coluna Aposta
+// ("Time A x Time B - Mercado"), sem acento e sem diferenciar maiúscula.
+let SEARCH_DEBOUNCE_TIMER = null;
+document.getElementById("hist-search-input").addEventListener("input", (e) => {
+  const valor = e.target.value;
+  document.getElementById("hist-search-clear").style.display = valor ? "flex" : "none";
+  clearTimeout(SEARCH_DEBOUNCE_TIMER);
+  SEARCH_DEBOUNCE_TIMER = setTimeout(() => {
+    SEARCH_QUERY = valor.trim();
+    renderHistorico();
+  }, 250);
+});
+document.getElementById("hist-search-clear").addEventListener("click", () => {
+  const input = document.getElementById("hist-search-input");
+  input.value = "";
+  input.focus();
+  document.getElementById("hist-search-clear").style.display = "none";
+  SEARCH_QUERY = "";
+  renderHistorico();
+});
+
 document.getElementById("rank-filter-today").addEventListener("click", () => {
   RANK_ONLY_TODAY = !RANK_ONLY_TODAY;
   if (RANK_ONLY_TODAY) RANK_ONLY_YESTERDAY = false;
@@ -1182,6 +1204,10 @@ function historicoBets() {
   if (ONLY_YESTERDAY) result = result.filter(b => b.data_iso === yesterdayISO());
   if (ONLY_PENDING_TODAY) result = result.filter(b => !isResolved(b) && b.data_iso === todayISO());
   if (ONLY_PENDING_FUTURE) result = result.filter(b => !isResolved(b) && b.data_iso && b.data_iso > todayISO());
+  if (SEARCH_QUERY) {
+    const alvo = stripAcentos(SEARCH_QUERY).toLowerCase();
+    result = result.filter(b => stripAcentos(b.aposta || "").toLowerCase().includes(alvo));
+  }
   return result;
 }
 
