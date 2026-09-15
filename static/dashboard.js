@@ -506,6 +506,7 @@ function switchView(view) {
   document.getElementById("nav-config").classList.toggle("active", view === "config");
 
   renderChips();
+  renderCasaChips();
 
   // corrige um bug de largura no Safari do iPhone: volta a rolagem da
   // página e das tabelas pro início, e força o gráfico a recalcular o
@@ -1306,9 +1307,9 @@ function renderRanking() {
     return `
       <tr>
         <td data-label="Tipster">${l.tipster}</td>
-        <td data-label="Apostas">${l.apostas}</td>
-        <td data-label="Taxa de acerto">${l.taxa !== null ? l.taxa.toFixed(1).replace(".", ",") + "%" : "—"}</td>
-        <td data-label="ROI">${l.roi !== null ? fmtPct(l.roi) : "—"}</td>
+        <td data-label="Apostas" class="col-center">${l.apostas}</td>
+        <td data-label="Taxa de acerto" class="col-center">${l.taxa !== null ? l.taxa.toFixed(1).replace(".", ",") + "%" : "—"}</td>
+        <td data-label="ROI" class="col-center">${l.roi !== null ? fmtPct(l.roi) : "—"}</td>
         <td data-label="Resultado" class="${cls}"><b>${fmtDual(l.lucro, l.lucroReais, true)}</b></td>
       </tr>
     `;
@@ -1407,8 +1408,8 @@ function renderBancasTable() {
     const rowHtml = `
       <tr class="banca-casa-row" onclick="toggleBancaCasa('${escJs(l.casa)}')">
         <td data-label="Casa">${l.casa}</td>
-        <td data-label="Contas ativas">${l.contas} conta${l.contas === 1 ? "" : "s"} ativa${l.contas === 1 ? "" : "s"}</td>
-        <td data-label="Banca somada"><b>${l.banca.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</b></td>
+        <td data-label="Contas ativas" class="col-center">${l.contas} conta${l.contas === 1 ? "" : "s"} ativa${l.contas === 1 ? "" : "s"}</td>
+        <td data-label="Banca somada" class="col-center"><b>${l.banca.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</b></td>
         <td data-label="Lucro" class="banca-lucro-cell">
           <b class="${lucroClass}">${lucro.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</b>${alertaHtml}
         </td>
@@ -1813,7 +1814,7 @@ function renderCasaSummary(bets) {
       <tr>
         <td>${l.casa}</td>
         <td class="col-center">${l.apostas}</td>
-        <td class="${l.roi == null ? "" : l.roi > 0 ? "positive" : l.roi < 0 ? "negative" : ""}">${l.roi == null ? "—" : fmtPct(l.roi)}</td>
+        <td class="col-center ${l.roi == null ? "" : l.roi > 0 ? "positive" : l.roi < 0 ? "negative" : ""}">${l.roi == null ? "—" : fmtPct(l.roi)}</td>
         <td class="${cls}"><b>${fmtDual(l.lucro, l.lucroReais, true)}</b></td>
       </tr>
     `;
@@ -1854,7 +1855,7 @@ function renderTipsterSummary(bets) {
       <tr>
         <td>${l.tipster}</td>
         <td class="col-center">${l.apostas}</td>
-        <td class="${l.roi == null ? "" : l.roi > 0 ? "positive" : l.roi < 0 ? "negative" : ""}">${l.roi == null ? "—" : fmtPct(l.roi)}</td>
+        <td class="col-center ${l.roi == null ? "" : l.roi > 0 ? "positive" : l.roi < 0 ? "negative" : ""}">${l.roi == null ? "—" : fmtPct(l.roi)}</td>
         <td class="${cls}"><b>${fmtDual(l.lucro, l.lucroReais, true)}</b></td>
       </tr>
     `;
