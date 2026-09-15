@@ -1359,3 +1359,43 @@ th.col-center, td.col-center { text-align: center !important; }
   font-size: 12px;
   font-weight: 500;
 }
+
+/* Miniformulário de horários pendentes (aparece depois de registrar um
+   print quando alguma aposta ficou sem horário — ex: BetBra) */
+.horario-pendente-box {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+.horario-pendente-title {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+.horario-pendente-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.horario-pendente-label {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.horario-pendente-item .edit-input {
+  width: 80px;
+  flex-shrink: 0;
+}
+.horario-pendente-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}

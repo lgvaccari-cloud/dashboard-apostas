@@ -923,6 +923,7 @@ function renderHistorico() {
     syncFromUnits(`edit-stake-${EDITING_IDX}-tbl`, `edit-stake-reais-${EDITING_IDX}-tbl`);
     syncFromUnits(`edit-stake-${EDITING_IDX}-card`, `edit-stake-reais-${EDITING_IDX}-card`);
   }
+  syncSortByHorarioBtn();
 }
 
 // ---------- Menu "..." de excluir aposta (compartilhado entre card e tabela) ----------
@@ -1184,6 +1185,7 @@ function openNewBetModal() {
   document.getElementById("new-bet-paste-zone").classList.remove("has-image");
   document.getElementById("print-loading-bar").style.display = "none";
   document.getElementById("new-bet-print-send").disabled = false;
+  document.getElementById("new-bet-print-send").style.display = "";
   setNewBetMode("print");
   document.getElementById("new-bet-overlay").style.display = "flex";
 }
@@ -1285,13 +1287,28 @@ function handlePrintResult(result, mes) {
   const sendBtn = document.getElementById("new-bet-print-send");
 
   if (result.status === "ok") {
-    setPrintFeedback("✅ " + (result.linhas || []).join("<br>✅ "));
-    sendBtn.disabled = true;
-    setTimeout(() => {
-      refreshMes(mes);
-      closeNewBetModal();
-    }, 1600);
-  } else if (result.status === "no_bets_found") {
+    const linhasHtml = "✅ " + (result.linhas || []).join("<br>✅ ");
+    const pendentes = (result.registros || []).filter(r => r.horario_pendente);
+
+    if (!pendentes.length) {
+      setPrintFeedback(linhasHtml);
+      sendBtn.disabled = true;
+      setTimeout(() => {
+        refreshMes(mes);
+        closeNewBetModal();
+      }, 1600);
+      return;
+    }
+
+    // uma ou mais apostas ficaram sem horário (ex: BetBra, ou a IA não
+    // conseguiu ler com confiança) — pede antes de fechar a janela, em vez
+    // de fechar direto e depender de editar cada linha depois.
+    sendBtn.style.display = "none";
+    renderHorarioPendenteForm(mes, pendentes, linhasHtml);
+    return;
+  }
+
+  if (result.status === "no_bets_found") {
     sendBtn.disabled = false;
     setPrintFeedback("Não consegui identificar nenhuma aposta nesse print. Tenta um print mais nítido.", "error");
   } else if (result.status === "waiting_somar") {
@@ -1327,6 +1344,59 @@ function handlePrintResult(result, mes) {
     sendBtn.disabled = false;
     setPrintFeedback(result.message || "Deu erro ao processar o print.", "error");
   }
+}
+
+// Depois de registrar apostas por print, se alguma ficou sem horário (ex:
+// BetBra, que nunca recebe automático — ou a IA não conseguiu ler com
+// confiança), pede pra preencher aqui antes de fechar a janela, em vez de
+// fechar direto e depender de caçar cada linha depois pra editar.
+function renderHorarioPendenteForm(mes, pendentes, linhasHtml) {
+  const camposHtml = pendentes.map((p, i) => `
+    <div class="horario-pendente-item">
+      <span class="horario-pendente-label" title="${esc(p.descricao)}">${esc(p.descricao)}</span>
+      <input type="text" class="edit-input small" id="horario-pendente-${i}" placeholder="14:30">
+    </div>
+  `).join("");
+
+  setPrintFeedback(`
+    ${linhasHtml}
+    <div class="horario-pendente-box">
+      <div class="horario-pendente-title">Não veio horário nessas — preenche antes de fechar (ou deixa em branco e edita depois):</div>
+      ${camposHtml}
+      <div class="horario-pendente-actions">
+        <button type="button" class="modal-btn cancel" id="horario-pendente-pular">Fechar sem preencher</button>
+        <button type="button" class="modal-btn save" id="horario-pendente-salvar">Salvar horários</button>
+      </div>
+    </div>
+  `);
+
+  document.getElementById("horario-pendente-pular").addEventListener("click", () => {
+    refreshMes(mes);
+    closeNewBetModal();
+  });
+
+  document.getElementById("horario-pendente-salvar").addEventListener("click", async () => {
+    const btn = document.getElementById("horario-pendente-salvar");
+    btn.disabled = true;
+    btn.textContent = "Salvando...";
+    try {
+      await Promise.all(pendentes.map((p, i) => {
+        const valor = document.getElementById(`horario-pendente-${i}`).value.trim();
+        if (!valor) return Promise.resolve();
+        return fetch("/api/update_bet", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mes, row: p.row, updates: { horario: valor } }),
+        });
+      }));
+    } catch (err) {
+      // não trava o fechamento por causa disso — as apostas já foram
+      // registradas, só o horário que pode não ter salvo; dá pra editar
+      // manualmente depois pelo Histórico
+    }
+    refreshMes(mes);
+    closeNewBetModal();
+  });
 }
 
 document.getElementById("new-bet-print-send").addEventListener("click", async () => {
@@ -2179,6 +2249,21 @@ document.getElementById("refresh-btn").addEventListener("click", async () => {
 });
 
 setupSortableHeaders(HIST_HEADERS, "hist", renderHistorico);
+
+// Botão "Por horário": aciona o mesmo clique do cabeçalho "Data" da Tabela
+// (que já ordena por data+hora combinados) — assim os dois controles ficam
+// sempre sincronizados, funcionando tanto no modo Cards quanto na Tabela.
+function syncSortByHorarioBtn() {
+  const btn = document.getElementById("sort-by-horario-btn");
+  if (!btn) return;
+  const ativo = SORT_STATE.hist.key === "data_hora_sort";
+  btn.classList.toggle("active", ativo);
+  const arrow = btn.querySelector(".sort-arrow");
+  if (arrow) arrow.textContent = ativo ? (SORT_STATE.hist.dir === 1 ? "▲" : "▼") : "";
+}
+document.getElementById("sort-by-horario-btn").addEventListener("click", () => {
+  document.getElementById("th-hist-data").click();
+});
 setupSortableHeaders(RANK_HEADERS, "rank", renderRanking);
 setupSortableHeaders(BANCA_HEADERS, "banca", renderBancasTable);
 setupSortableHeaders(CASA_HEADERS, "casa", () => renderCasaSummary(currentBets()));
