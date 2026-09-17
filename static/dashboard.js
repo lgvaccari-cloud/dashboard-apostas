@@ -608,6 +608,7 @@ document.getElementById("clear-all-filters").addEventListener("click", () => {
 
 // ---------- Navegação entre visões ----------
 function switchView(view) {
+  fecharMenuMobile();
   CURRENT_VIEW = view;
   ["geral", "historico", "ranking", "bancas", "config"].forEach(v => {
     document.getElementById(`view-${v}`).style.display = (v === view) ? "" : "none";
@@ -636,6 +637,18 @@ function switchView(view) {
   if (view === "bancas") loadBancas();
   if (view === "config") { renderThemeGrid(); renderFontGrid(); }
 }
+
+// ---------- Menu mobile (hambúrguer) ----------
+function abrirMenuMobile() {
+  document.getElementById("sidebar").classList.add("mobile-open");
+  document.getElementById("mobile-menu-backdrop").classList.add("visible");
+}
+function fecharMenuMobile() {
+  document.getElementById("sidebar").classList.remove("mobile-open");
+  document.getElementById("mobile-menu-backdrop").classList.remove("visible");
+}
+document.getElementById("mobile-menu-btn").addEventListener("click", abrirMenuMobile);
+document.getElementById("mobile-menu-backdrop").addEventListener("click", fecharMenuMobile);
 
 document.getElementById("nav-geral").addEventListener("click", () => switchView("geral"));
 document.getElementById("brand-home").addEventListener("click", () => switchView("geral"));
