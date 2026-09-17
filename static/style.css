@@ -1340,9 +1340,13 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
      esticava as duas pra beira a beira da tela, com Resultado lá longe à
      direita — aqui o tamanho passa a seguir o conteúdo, ficando as duas
      coladas à esquerda */
-  #view-ranking .bets-table { table-layout: auto; width: auto; min-width: 0; }
-  #view-ranking .bets-table th, #view-ranking .bets-table td { white-space: nowrap; }
-  #th-rank-resultado, #view-ranking td[data-label="Resultado"] { padding-left: 22px; }
+  /* volta pra table-layout:fixed, mas agora só com as 2 colunas visíveis
+     dividindo 50/50 a largura toda do card — sobrescreve os width em px
+     fixos do desktop (nth-child(1) e nth-child(5)), que eram pensados pra
+     5 colunas, não pra 2 */
+  #view-ranking .bets-table { table-layout: fixed; width: 100%; min-width: 0; }
+  #view-ranking .bets-table th:nth-child(1), #view-ranking .bets-table td:nth-child(1) { width: 50%; }
+  #view-ranking .bets-table th:nth-child(5), #view-ranking .bets-table td:nth-child(5) { width: 50%; text-align: right; }
   #view-bancas .cards-row { grid-template-columns: 1fr !important; }
   .modal-grid { grid-template-columns: 1fr; }
   .modal-span-2 { grid-column: span 1; }
