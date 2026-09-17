@@ -630,8 +630,11 @@ function switchView(view) {
   fecharMenuMobile();
   CURRENT_VIEW = view;
   // o filtro de Mês (global, em cima de todas as views) não faz sentido em
-  // Configurações — tema/fonte não são coisas que mudam por mês
+  // Configurações — tema/fonte não são coisas que mudam por mês. Esconde
+  // tanto a versão desktop (os 3 dropdowns) quanto o botão "Filtros" do
+  // mobile que abre a gaveta deles.
   document.getElementById("filters-row").style.display = view === "config" ? "none" : "";
+  document.getElementById("mobile-filters-toggle").style.display = view === "config" ? "none" : "";
   ["geral", "historico", "ranking", "bancas", "config"].forEach(v => {
     document.getElementById(`view-${v}`).style.display = (v === view) ? "" : "none";
   });
