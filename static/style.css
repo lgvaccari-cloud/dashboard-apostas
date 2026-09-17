@@ -198,8 +198,10 @@ body {
 .brand-mark {
   width: 34px; height: 34px;
   background: var(--accent-gradient, var(--accent));
+  background-size: cover;
+  background-position: center;
   color: #12151f;
-  border-radius: 9px;
+  border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-weight: 800;
   font-size: 12px;
@@ -209,6 +211,65 @@ body {
 .brand-name { font-weight: 700; font-size: 14px; color: white; }
 .login-brand .brand-name { color: var(--text); }
 .brand-sub { font-size: 11px; color: var(--muted); }
+
+/* Wordmark do produto, em cima do bloco de usuário */
+.app-wordmark {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  margin-bottom: 16px;
+  background: var(--accent-gradient, var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.app-wordmark-dot { opacity: 0.65; }
+
+/* Botão de editar perfil (lápis) — só aparece ao passar o mouse no bloco */
+.brand { position: relative; }
+.brand-edit-btn {
+  margin-left: auto;
+  width: 24px; height: 24px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: #cfd3dd;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.brand-edit-btn svg { width: 13px; height: 13px; }
+.brand:hover .brand-edit-btn { opacity: 1; }
+.brand-edit-btn:hover { background: rgba(255, 255, 255, 0.16); }
+
+/* Modal "Editar perfil" */
+.profile-edit-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.profile-edit-avatar-preview { width: 56px; height: 56px; font-size: 18px; }
+.profile-edit-name-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.profile-edit-name-label input {
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 13px;
+  font-family: inherit;
+  background: var(--card-bg);
+  color: var(--text);
+}
 
 .side-nav { display: flex; flex-direction: column; gap: 4px; }
 .side-item {

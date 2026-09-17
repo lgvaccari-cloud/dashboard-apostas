@@ -627,6 +627,134 @@ function switchView(view) {
 
 document.getElementById("nav-geral").addEventListener("click", () => switchView("geral"));
 document.getElementById("brand-home").addEventListener("click", () => switchView("geral"));
+
+// ---------- Perfil (nome + foto) ----------
+// Guardado no navegador (mesmo mecanismo de tema/fonte) — não existe conta
+// de usuário nesse app ainda, é um painel de uso pessoal.
+function iniciaisDoNome(nome) {
+  const partes = (nome || "").trim().split(/\s+/).filter(Boolean);
+  if (!partes.length) return "?";
+  const primeira = partes[0][0];
+  const ultima = partes.length > 1 ? partes[partes.length - 1][0] : "";
+  return (primeira + ultima).toUpperCase();
+}
+
+function carregarPerfil() {
+  let nome = "Luís Vaccari";
+  let foto = null;
+  try {
+    nome = localStorage.getItem("painel_nome") || nome;
+    foto = localStorage.getItem("painel_foto") || null;
+  } catch (e) {}
+  return { nome, foto };
+}
+
+function aplicarPerfilNaTela() {
+  const { nome, foto } = carregarPerfil();
+  document.getElementById("brand-name").textContent = nome;
+  const mark = document.getElementById("brand-mark");
+  if (foto) {
+    mark.style.backgroundImage = `url(${foto})`;
+    mark.textContent = "";
+  } else {
+    mark.style.backgroundImage = "";
+    mark.textContent = iniciaisDoNome(nome);
+  }
+}
+
+// Redimensiona e recorta a foto num quadrado pequeno antes de guardar — uma
+// foto de celular sem tratar pesaria vários MB em data-URL, o que é
+// desnecessário pra um avatar de 34px e arriscado pro limite do localStorage.
+function processarFotoPerfil(file, callback) {
+  const img = new Image();
+  const url = URL.createObjectURL(file);
+  img.onload = () => {
+    const lado = Math.min(img.width, img.height);
+    const sx = (img.width - lado) / 2;
+    const sy = (img.height - lado) / 2;
+    const TAMANHO = 160;
+    const canvas = document.createElement("canvas");
+    canvas.width = TAMANHO;
+    canvas.height = TAMANHO;
+    canvas.getContext("2d").drawImage(img, sx, sy, lado, lado, 0, 0, TAMANHO, TAMANHO);
+    URL.revokeObjectURL(url);
+    callback(canvas.toDataURL("image/jpeg", 0.85));
+  };
+  img.src = url;
+}
+
+let PROFILE_EDIT_FOTO = undefined; // undefined = não mexeu, null = removida, string = nova
+
+function abrirEdicaoPerfil(e) {
+  e.stopPropagation(); // não deixa o clique "vazar" pro brand-home (que trocaria de tela)
+  const { nome, foto } = carregarPerfil();
+  document.getElementById("profile-edit-name-input").value = nome;
+  PROFILE_EDIT_FOTO = undefined;
+  atualizarPreviewEdicaoPerfil(foto);
+  document.getElementById("profile-edit-overlay").style.display = "flex";
+}
+
+function atualizarPreviewEdicaoPerfil(foto) {
+  const preview = document.getElementById("profile-edit-avatar-preview");
+  const nomeAtual = document.getElementById("profile-edit-name-input").value;
+  if (foto) {
+    preview.style.backgroundImage = `url(${foto})`;
+    preview.textContent = "";
+  } else {
+    preview.style.backgroundImage = "";
+    preview.textContent = iniciaisDoNome(nomeAtual);
+  }
+  document.getElementById("profile-edit-photo-remove").style.display = foto ? "inline" : "none";
+}
+
+document.getElementById("brand-edit-btn").addEventListener("click", abrirEdicaoPerfil);
+
+document.getElementById("profile-edit-name-input").addEventListener("input", () => {
+  const fotoAtual = PROFILE_EDIT_FOTO !== undefined ? PROFILE_EDIT_FOTO : carregarPerfil().foto;
+  atualizarPreviewEdicaoPerfil(fotoAtual);
+});
+
+document.getElementById("profile-edit-photo-btn").addEventListener("click", () => {
+  document.getElementById("profile-edit-photo-input").click();
+});
+
+document.getElementById("profile-edit-photo-input").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  processarFotoPerfil(file, (dataUrl) => {
+    PROFILE_EDIT_FOTO = dataUrl;
+    atualizarPreviewEdicaoPerfil(dataUrl);
+  });
+});
+
+document.getElementById("profile-edit-photo-remove").addEventListener("click", () => {
+  PROFILE_EDIT_FOTO = null;
+  atualizarPreviewEdicaoPerfil(null);
+});
+
+document.getElementById("profile-edit-cancel").addEventListener("click", () => {
+  document.getElementById("profile-edit-overlay").style.display = "none";
+});
+document.getElementById("profile-edit-overlay").addEventListener("click", (e) => {
+  if (e.target.id === "profile-edit-overlay") document.getElementById("profile-edit-overlay").style.display = "none";
+});
+
+document.getElementById("profile-edit-save").addEventListener("click", () => {
+  const nome = document.getElementById("profile-edit-name-input").value.trim() || "Sem nome";
+  try {
+    localStorage.setItem("painel_nome", nome);
+    if (PROFILE_EDIT_FOTO === null) {
+      localStorage.removeItem("painel_foto");
+    } else if (PROFILE_EDIT_FOTO !== undefined) {
+      localStorage.setItem("painel_foto", PROFILE_EDIT_FOTO);
+    }
+  } catch (e) {}
+  document.getElementById("profile-edit-overlay").style.display = "none";
+  aplicarPerfilNaTela();
+});
+
+aplicarPerfilNaTela();
+
 document.getElementById("nav-historico").addEventListener("click", () => {
   ONLY_PENDING = false;
   ONLY_PENDING_TODAY = false;
