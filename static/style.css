@@ -1291,8 +1291,9 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
      nasce como "cards" e nunca muda sem esse botão pra trocar */
   .hist-view-toggle { display: none; }
   .cards-row, .cards-row:nth-of-type(2) { grid-template-columns: 1fr; }
+  .cards-row-lucro-prejuizo { display: none; }
   .bottom-row { grid-template-columns: 1fr; }
-  .insight-row { grid-template-columns: 1fr; }
+  .content .insight-row { display: none; }
   #view-bancas .cards-row { grid-template-columns: 1fr !important; }
   .modal-grid { grid-template-columns: 1fr; }
   .modal-span-2 { grid-column: span 1; }
