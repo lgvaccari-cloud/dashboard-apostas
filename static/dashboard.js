@@ -1326,8 +1326,10 @@ function renderBetsCards(bets) {
       <div class="bet-card${collapsedClass}">
         <div class="bet-card-header" onclick="toggleCardCollapse(event, '${escJs(key)}')">
           <span class="bet-card-title">${b.stake ? fmtDual(b.stake, b.stake_reais, false) : "—"} - ${b.tipster || "—"}</span>
-          <span class="bet-card-badge ${resultHeaderClass(b.resultado)}">${resultBadgeLabel(b.resultado)}</span>
-          <span class="bet-card-chevron">▾</span>
+          <span class="bet-card-header-right">
+            <span class="bet-card-badge ${resultHeaderClass(b.resultado)}">${resultBadgeLabel(b.resultado)}</span>
+            <span class="bet-card-chevron">▾</span>
+          </span>
         </div>
         <div class="bet-card-body">
           <div class="bet-card-jogo">${jogo}</div>

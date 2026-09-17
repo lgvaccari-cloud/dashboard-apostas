@@ -695,6 +695,12 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   font-size: 12px;
   transition: transform 0.18s ease;
 }
+.bet-card-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
 .bet-card.collapsed .bet-card-header { border-radius: 13px; }
 .bet-card.collapsed .bet-card-chevron { transform: rotate(-90deg); }
 .bet-card.collapsed .bet-card-body,
