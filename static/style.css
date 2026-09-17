@@ -1354,10 +1354,16 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   #th-banca-contas, #view-bancas td[data-label="Contas ativas"] {
     display: none;
   }
-  #view-bancas .bets-table { table-layout: fixed; width: 100%; min-width: 0; }
-  #view-bancas .bets-table th:nth-child(1), #view-bancas .bets-table td:nth-child(1) { width: 38%; }
-  #view-bancas .bets-table th:nth-child(3), #view-bancas .bets-table td:nth-child(3) { width: 31%; }
-  #view-bancas .bets-table th:nth-child(4), #view-bancas .bets-table td:nth-child(4) { width: 31%; }
+  /* Bancas: as larguras em % que eu tinha chutado (38/31/31) não davam
+     conta dos valores em reais de verdade (tipo "-R$ 1.875,00"), cortando
+     no meio do número — o pior cenário possível pra uma tabela de
+     dinheiro. Troquei pra largura baseada no conteúdo real de cada
+     célula, com fonte um pouco menor, pra caber o valor inteiro. */
+  #view-bancas .bets-table { table-layout: auto; width: auto; min-width: 100%; }
+  #view-bancas .bets-table th:nth-child(1), #view-bancas .bets-table td:nth-child(1) { width: auto; }
+  #view-bancas .bets-table th, #view-bancas .bets-table td { white-space: nowrap; padding: 10px 6px; }
+  #view-bancas .bets-table td { font-size: 12.5px; }
+  #view-bancas .bets-table td b { font-size: 12.5px; }
   #th-banca-total, #view-bancas td[data-label="Banca somada"],
   #th-banca-lucro, #view-bancas td[data-label="Lucro"] { text-align: right; }
   /* o alerta de bater a banca precisa continuar fácil de tocar mesmo
