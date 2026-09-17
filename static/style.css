@@ -1347,6 +1347,22 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   #view-ranking .bets-table { table-layout: fixed; width: 100%; min-width: 0; }
   #view-ranking .bets-table th:nth-child(1), #view-ranking .bets-table td:nth-child(1) { width: 50%; }
   #view-ranking .bets-table th:nth-child(5), #view-ranking .bets-table td:nth-child(5) { width: 50%; text-align: right; }
+  /* Bancas: mesma ideia do Ranking (larguras próprias, sem depender da
+     largura mínima em px de desktop), mas aqui com 3 colunas — Casa,
+     Banca somada e Lucro (só "Contas ativas" sai, o resto é essencial
+     pra decidir se precisa bater a banca) */
+  #th-banca-contas, #view-bancas td[data-label="Contas ativas"] {
+    display: none;
+  }
+  #view-bancas .bets-table { table-layout: fixed; width: 100%; min-width: 0; }
+  #view-bancas .bets-table th:nth-child(1), #view-bancas .bets-table td:nth-child(1) { width: 38%; }
+  #view-bancas .bets-table th:nth-child(3), #view-bancas .bets-table td:nth-child(3) { width: 31%; }
+  #view-bancas .bets-table th:nth-child(4), #view-bancas .bets-table td:nth-child(4) { width: 31%; }
+  #th-banca-total, #view-bancas td[data-label="Banca somada"],
+  #th-banca-lucro, #view-bancas td[data-label="Lucro"] { text-align: right; }
+  /* o alerta de bater a banca precisa continuar fácil de tocar mesmo
+     colado na borda direita da coluna */
+  .banca-alerta { width: 20px; height: 20px; }
   #view-bancas .cards-row { grid-template-columns: 1fr !important; }
   .modal-grid { grid-template-columns: 1fr; }
   .modal-span-2 { grid-column: span 1; }
