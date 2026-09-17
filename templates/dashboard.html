@@ -18,12 +18,16 @@
 <body>
   <div class="layout">
     <aside class="sidebar">
+      <div class="app-wordmark">PLANILHEIRO<span class="app-wordmark-dot">.BET</span></div>
       <div class="brand" id="brand-home" style="cursor:pointer">
-        <span class="brand-mark">LV</span>
+        <span class="brand-mark" id="brand-mark">LV</span>
         <div>
-          <div class="brand-name">Luís Vaccari</div>
+          <div class="brand-name" id="brand-name">Luís Vaccari</div>
           <div class="brand-sub">Gestão de banca</div>
         </div>
+        <button type="button" class="brand-edit-btn" id="brand-edit-btn" title="Editar perfil">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        </button>
       </div>
       <nav class="side-nav">
         <div class="side-item active" id="nav-geral"><span class="side-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Visão geral</div>
@@ -339,6 +343,27 @@
       <div class="modal-actions">
         <button class="modal-btn cancel" id="ajuste-cancel">Cancelar</button>
         <button class="modal-btn save" id="ajuste-confirm">Confirmar ajuste</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="profile-edit-overlay" style="display:none">
+    <div class="modal-card">
+      <h2>Editar perfil</h2>
+      <div class="profile-edit-avatar-row">
+        <span class="brand-mark profile-edit-avatar-preview" id="profile-edit-avatar-preview">LV</span>
+        <div>
+          <input type="file" id="profile-edit-photo-input" accept="image/*" style="display:none">
+          <button type="button" class="modal-btn cancel" id="profile-edit-photo-btn">Trocar foto</button>
+          <button type="button" class="clear-link" id="profile-edit-photo-remove" style="display:none">Remover foto</button>
+        </div>
+      </div>
+      <label class="profile-edit-name-label">Nome
+        <input type="text" id="profile-edit-name-input" placeholder="Seu nome">
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="modal-btn cancel" id="profile-edit-cancel">Cancelar</button>
+        <button type="button" class="modal-btn save" id="profile-edit-save">Salvar</button>
       </div>
     </div>
   </div>
