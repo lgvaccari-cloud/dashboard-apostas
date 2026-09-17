@@ -10,6 +10,7 @@
   --red: #d94436;
   --red-bg: #fbe9e7;
   --accent: #6fa72e;
+  --header-text: #eef1f6;
   --radius: 14px;
   --font-family: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-family: var(--font-family);
@@ -63,6 +64,33 @@ body[data-theme="dark-meianoite"] {
   --accent: #9d6fe0;
 }
 
+/* Carvão — cinza-chumbo neutro, tom mais "profissional/discreto". */
+body[data-theme="dark-carvao"] {
+  --bg: #14171c; --sidebar-bg: #0d0f13; --card-bg: #1f2329; --border: #343a42;
+  --text: #eceef1; --muted: #9298a1;
+  --green: #5fc97e; --green-bg: rgba(95, 201, 126, 0.14);
+  --red: #e5645c; --red-bg: rgba(229, 100, 92, 0.14);
+  --accent: #6b93c9;
+}
+
+/* Cobre — marrom quente com o destaque em cobre/bronze. */
+body[data-theme="dark-cobre"] {
+  --bg: #1c1512; --sidebar-bg: #130d0b; --card-bg: #2a201b; --border: #453630;
+  --text: #f2e8e1; --muted: #ab9186;
+  --green: #79c98f; --green-bg: rgba(121, 201, 143, 0.14);
+  --red: #e2695f; --red-bg: rgba(226, 105, 95, 0.14);
+  --accent: #c97d4a;
+}
+
+/* Safira — azul profundo, o destaque é um azul mais vivo. */
+body[data-theme="dark-safira"] {
+  --bg: #0d1526; --sidebar-bg: #080e1b; --card-bg: #17233d; --border: #2b3a5c;
+  --text: #e6edfa; --muted: #8b9dc4;
+  --green: #5fce9a; --green-bg: rgba(95, 206, 154, 0.14);
+  --red: #ef6f6b; --red-bg: rgba(239, 111, 107, 0.14);
+  --accent: #3b82f6;
+}
+
 /* Nebulosa — azul entrando em roxo e saindo em magenta, fundo quase preto
    puxado pro azul-marinho. É o tema mais próximo das referências mandadas. */
 body[data-theme="dark-nebulosa"] {
@@ -85,8 +113,8 @@ body[data-theme="dark-cyber"] {
 }
 
 /* Hacker — verde-limão neon sobre fundo quase preto, estilo terminal.
-   O --accent aqui é de propósito bem próximo do --green (é a cara do tema),
-   só um pouco mais claro/neon pra continuar dando pra distinguir os dois. */
+   O gradiente é bem claro, então o texto do cabeçalho do card vira verde
+   escuro (--header-text) em vez de branco, senão fica ilegível. */
 body[data-theme="dark-hacker"] {
   --bg: #050b07; --sidebar-bg: #030502; --card-bg: #0e1c11; --border: #204028;
   --text: #dbf8e1; --muted: #7cab89;
@@ -94,10 +122,12 @@ body[data-theme="dark-hacker"] {
   --red: #ff4d6a; --red-bg: rgba(255, 77, 106, 0.14);
   --accent: #39ff88;
   --accent-gradient: linear-gradient(135deg, #a3ff5c 0%, #39ff88 55%, #10d68a 100%);
+  --header-text: #04321a;
 }
 
 /* Lava — laranja neon entrando em vermelho, fundo escuro puxado pro marrom
-   bem profundo. */
+   bem profundo. A ponta âmbar do gradiente é clara, então o cabeçalho do
+   card também usa texto escuro. */
 body[data-theme="dark-lava"] {
   --bg: #170b06; --sidebar-bg: #0f0503; --card-bg: #241209; --border: #442414;
   --text: #fceee3; --muted: #c2967d;
@@ -105,6 +135,18 @@ body[data-theme="dark-lava"] {
   --red: #ff4444; --red-bg: rgba(255, 68, 68, 0.14);
   --accent: #fb923c;
   --accent-gradient: linear-gradient(135deg, #fbbf24 0%, #fb923c 55%, #f43f5e 100%);
+  --header-text: #401207;
+}
+
+/* Fúcsia — rosa neon entrando em magenta profundo. */
+body[data-theme="dark-fucsia"] {
+  --bg: #170a14; --sidebar-bg: #0f050d; --card-bg: #251020; --border: #452038;
+  --text: #fbe7f4; --muted: #c68bb0;
+  --green: #4ade80; --green-bg: rgba(74, 222, 128, 0.14);
+  --red: #ff4444; --red-bg: rgba(255, 68, 68, 0.14);
+  --accent: #ec4899;
+  --accent-gradient: linear-gradient(135deg, #f472b6 0%, #ec4899 50%, #db2777 100%);
+  --header-text: #3d0620;
 }
 
 body.theme-dark .bets-table tbody tr:nth-child(even) { background: rgba(255,255,255,0.03); }
@@ -690,7 +732,7 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
 }
 .bet-card-chevron {
   flex-shrink: 0;
-  color: #eef1f6;
+  color: var(--header-text, #eef1f6);
   opacity: 0.55;
   font-size: 12px;
   transition: transform 0.18s ease;
@@ -708,7 +750,7 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
 .bet-card-title {
   font-size: 14.5px;
   font-weight: 600;
-  color: #eef1f6;
+  color: var(--header-text, #eef1f6);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

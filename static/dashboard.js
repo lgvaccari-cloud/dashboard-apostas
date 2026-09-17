@@ -286,10 +286,14 @@ const THEMES = [
   { id: "light-floresta", label: "Floresta", group: "light", bg: "#f3f1e9", sidebarBg: "#1b2b1e", cardBg: "#fdfcf7", accent: "#2f6b3a" },
   { id: "dark-default", label: "Padrão", group: "dark", bg: "#0f1626", sidebarBg: "#0a0f1e", cardBg: "#1a2338", accent: "#8bc34a" },
   { id: "dark-meianoite", label: "Meia-noite", group: "dark", bg: "#161326", sidebarBg: "#0f0c1d", cardBg: "#211c36", accent: "#9d6fe0" },
-  { id: "dark-nebulosa", label: "Nebulosa", group: "dark", bg: "#0a0e1c", sidebarBg: "#06080f", cardBg: "#161a2e", accent: "#a855f7", gradient: "linear-gradient(135deg, #4f7df7 0%, #a855f7 55%, #ec4899 100%)" },
-  { id: "dark-cyber", label: "Cyber", group: "dark", bg: "#071318", sidebarBg: "#04090c", cardBg: "#0e1f27", accent: "#22d3ee", gradient: "linear-gradient(135deg, #22d3ee 0%, #0ea5e9 55%, #6366f1 100%)" },
-  { id: "dark-hacker", label: "Hacker", group: "dark", bg: "#050b07", sidebarBg: "#030502", cardBg: "#0e1c11", accent: "#39ff88", gradient: "linear-gradient(135deg, #a3ff5c 0%, #39ff88 55%, #10d68a 100%)" },
-  { id: "dark-lava", label: "Lava", group: "dark", bg: "#170b06", sidebarBg: "#0f0503", cardBg: "#241209", accent: "#fb923c", gradient: "linear-gradient(135deg, #fbbf24 0%, #fb923c 55%, #f43f5e 100%)" },
+  { id: "dark-carvao", label: "Carvão", group: "dark", bg: "#14171c", sidebarBg: "#0d0f13", cardBg: "#1f2329", accent: "#6b93c9" },
+  { id: "dark-cobre", label: "Cobre", group: "dark", bg: "#1c1512", sidebarBg: "#130d0b", cardBg: "#2a201b", accent: "#c97d4a" },
+  { id: "dark-safira", label: "Safira", group: "dark", bg: "#0d1526", sidebarBg: "#080e1b", cardBg: "#17233d", accent: "#3b82f6" },
+  { id: "dark-nebulosa", label: "Nebulosa", group: "neon", bg: "#0a0e1c", sidebarBg: "#06080f", cardBg: "#161a2e", accent: "#a855f7", gradient: "linear-gradient(135deg, #4f7df7 0%, #a855f7 55%, #ec4899 100%)" },
+  { id: "dark-cyber", label: "Cyber", group: "neon", bg: "#071318", sidebarBg: "#04090c", cardBg: "#0e1f27", accent: "#22d3ee", gradient: "linear-gradient(135deg, #22d3ee 0%, #0ea5e9 55%, #6366f1 100%)" },
+  { id: "dark-hacker", label: "Hacker", group: "neon", bg: "#050b07", sidebarBg: "#030502", cardBg: "#0e1c11", accent: "#39ff88", gradient: "linear-gradient(135deg, #a3ff5c 0%, #39ff88 55%, #10d68a 100%)" },
+  { id: "dark-lava", label: "Lava", group: "neon", bg: "#170b06", sidebarBg: "#0f0503", cardBg: "#241209", accent: "#fb923c", gradient: "linear-gradient(135deg, #fbbf24 0%, #fb923c 55%, #f43f5e 100%)" },
+  { id: "dark-fucsia", label: "Fúcsia", group: "neon", bg: "#170a14", sidebarBg: "#0f050d", cardBg: "#251020", accent: "#ec4899", gradient: "linear-gradient(135deg, #f472b6 0%, #ec4899 50%, #db2777 100%)" },
 ];
 
 let CURRENT_THEME = "light-default";
@@ -298,8 +302,8 @@ function applyTheme(themeId) {
   const theme = THEMES.find(t => t.id === themeId) || THEMES[0];
   CURRENT_THEME = theme.id;
   document.body.dataset.theme = theme.id;
-  document.body.classList.toggle("theme-dark", theme.group === "dark");
-  document.getElementById("toggle-dark").innerHTML = theme.group === "dark" ? ICON_SUN : ICON_MOON;
+  document.body.classList.toggle("theme-dark", theme.group !== "light");
+  document.getElementById("toggle-dark").innerHTML = theme.group !== "light" ? ICON_SUN : ICON_MOON;
   try { localStorage.setItem("painel_theme", theme.id); } catch (e) {}
   renderThemeGrid();
   if (ALL_BETS.length) renderAll(); // recria o gráfico com as cores certas
@@ -307,13 +311,14 @@ function applyTheme(themeId) {
 
 document.getElementById("toggle-dark").addEventListener("click", () => {
   const atual = THEMES.find(t => t.id === CURRENT_THEME) || THEMES[0];
-  applyTheme(atual.group === "dark" ? "light-default" : "dark-default");
+  applyTheme(atual.group !== "light" ? "light-default" : "dark-default");
 });
 
 function renderThemeGrid() {
   const lightGrid = document.getElementById("theme-grid-light");
   const darkGrid = document.getElementById("theme-grid-dark");
-  if (!lightGrid || !darkGrid) return;
+  const neonGrid = document.getElementById("theme-grid-neon");
+  if (!lightGrid || !darkGrid || !neonGrid) return;
   const buildSwatch = (t) => `
     <button class="theme-swatch ${t.id === CURRENT_THEME ? "active" : ""}" onclick="applyTheme('${t.id}')">
       <div class="theme-swatch-preview" style="background:${t.bg}">
@@ -325,6 +330,7 @@ function renderThemeGrid() {
   `;
   lightGrid.innerHTML = THEMES.filter(t => t.group === "light").map(buildSwatch).join("");
   darkGrid.innerHTML = THEMES.filter(t => t.group === "dark").map(buildSwatch).join("");
+  neonGrid.innerHTML = THEMES.filter(t => t.group === "neon").map(buildSwatch).join("");
 }
 
 // ---------- Fontes ----------
@@ -2469,7 +2475,7 @@ function renderChart(resolvedBets) {
   };
 
   const temaAtual = THEMES.find(t => t.id === CURRENT_THEME) || THEMES[0];
-  const gridColor = temaAtual.group === "dark" ? "rgba(255,255,255,0.08)" : "#eef1f6";
+  const gridColor = temaAtual.group !== "light" ? "rgba(255,255,255,0.08)" : "#eef1f6";
   const tickColor = getComputedStyle(document.body).getPropertyValue("--muted").trim() || "#7a8494";
 
   chartInstance = new Chart(ctx, {
