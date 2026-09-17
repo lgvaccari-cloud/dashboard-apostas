@@ -1229,14 +1229,31 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   .mobile-topbar {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
     padding: 14px 16px;
     padding-top: max(14px, env(safe-area-inset-top));
     background: var(--sidebar-bg);
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 998;
   }
+  .mobile-new-bet-btn {
+    margin-left: auto;
+    padding: 7px 14px;
+    font-size: 12.5px;
+    flex-shrink: 0;
+  }
+  /* o botão original fica escondido — o da barra fixa faz esse papel agora */
+  #new-bet-btn { display: none; }
+  /* o topbar virou position:fixed (sai do fluxo normal), então o conteúdo
+     precisa de um respiro no topo do tamanho da barra. Não uso um valor
+     fixo aqui porque a altura da barra muda de aparelho pra aparelho
+     (a área de segurança do notch/Dynamic Island varia) — esse cálculo
+     espelha exatamente o padding-top que o .mobile-topbar usa mais o
+     tamanho do conteúdo dele (36px do ícone + 14px de padding embaixo).*/
+  .layout { padding-top: calc(max(14px, env(safe-area-inset-top)) + 50px); }
   .mobile-menu-btn {
     flex-shrink: 0;
     width: 36px; height: 36px;
@@ -1294,6 +1311,14 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   .cards-row-lucro-prejuizo { display: none; }
   .bottom-row { grid-template-columns: 1fr; }
   .content .insight-row { display: none; }
+  /* Ranking no celular: só Tipster e Resultado, o resto fica apertado
+     demais numa tela estreita */
+  #th-rank-apostas, #th-rank-taxa, #th-rank-roi,
+  #view-ranking td[data-label="Apostas"],
+  #view-ranking td[data-label="Taxa de acerto"],
+  #view-ranking td[data-label="ROI"] {
+    display: none;
+  }
   #view-bancas .cards-row { grid-template-columns: 1fr !important; }
   .modal-grid { grid-template-columns: 1fr; }
   .modal-span-2 { grid-column: span 1; }
@@ -1368,7 +1393,6 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
 
 @media (max-width: 480px) {
   .topbar-actions { width: 100%; justify-content: space-between; }
-  .new-bet-btn { flex: 1 1 auto; text-align: center; }
 }
 
 /* Alerta de lucro que não bate com o planilhamento — fica colado no valor */

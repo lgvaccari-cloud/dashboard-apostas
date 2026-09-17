@@ -610,6 +610,9 @@ document.getElementById("clear-all-filters").addEventListener("click", () => {
 function switchView(view) {
   fecharMenuMobile();
   CURRENT_VIEW = view;
+  // o filtro de Mês (global, em cima de todas as views) não faz sentido em
+  // Configurações — tema/fonte não são coisas que mudam por mês
+  document.getElementById("filters-row").style.display = view === "config" ? "none" : "";
   ["geral", "historico", "ranking", "bancas", "config"].forEach(v => {
     document.getElementById(`view-${v}`).style.display = (v === view) ? "" : "none";
   });
@@ -1540,6 +1543,7 @@ function closeNewBetModal() {
 }
 
 document.getElementById("new-bet-btn").addEventListener("click", openNewBetModal);
+document.getElementById("new-bet-btn-mobile").addEventListener("click", openNewBetModal);
 document.getElementById("new-bet-cancel").addEventListener("click", closeNewBetModal);
 document.getElementById("new-bet-overlay").addEventListener("click", (e) => {
   if (e.target.id === "new-bet-overlay") closeNewBetModal();
