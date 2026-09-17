@@ -9,6 +9,7 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "troque-essa-chave-em-producao")
 
 DASHBOARD_PASSWORD = os.environ.get("DASHBOARD_PASSWORD", "")
+DASHBOARD_USERNAME = os.environ.get("DASHBOARD_USERNAME", "")
 
 # URL pública do bot do Telegram (agora rodando como Web Service) e a chave
 # secreta compartilhada com ele — usados pra mandar prints de "+ Nova aposta"
@@ -30,11 +31,17 @@ def login_required(f):
 def login():
     error = None
     if request.method == "POST":
+        usuario = request.form.get("usuario", "")
         senha = request.form.get("senha", "")
-        if DASHBOARD_PASSWORD and senha == DASHBOARD_PASSWORD:
+        # se DASHBOARD_USERNAME ainda não foi configurado no Render, o login
+        # continua funcionando só com a senha (não trava ninguém de fora
+        # enquanto a variável nova não é criada)
+        usuario_ok = (not DASHBOARD_USERNAME) or usuario == DASHBOARD_USERNAME
+        senha_ok = bool(DASHBOARD_PASSWORD) and senha == DASHBOARD_PASSWORD
+        if usuario_ok and senha_ok:
             session["logged_in"] = True
             return redirect(url_for("index"))
-        error = "Senha incorreta."
+        error = "Usuário ou senha incorretos."
     return render_template("login.html", error=error)
 
 
