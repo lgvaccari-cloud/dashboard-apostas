@@ -176,11 +176,6 @@ body {
   align-items: center;
   gap: 10px;
 }
-.login-topbar {
-  display: flex;
-  justify-content: flex-end;
-  width: 320px;
-}
 .login-card {
   background: var(--card-bg);
   border: 1px solid var(--border);
@@ -577,20 +572,6 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
-
-.dark-toggle-btn {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  width: 38px; height: 38px;
-  cursor: pointer;
-  color: var(--muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.dark-toggle-btn:hover { filter: brightness(0.96); }
-.dark-toggle-btn svg { width: 16px; height: 16px; }
 
 .new-bet-btn {
   background: var(--accent);

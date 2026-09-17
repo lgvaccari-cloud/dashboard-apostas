@@ -4,8 +4,6 @@ const MESES_PT = [
   "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
 ];
 
-const ICON_MOON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
-const ICON_SUN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`;
 const ICON_TREND_UP = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg>`;
 const ICON_TREND_DOWN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l6 6 4-4 8 8"/><path d="M17 17h4v-4"/></svg>`;
 const ICON_ALERTA = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.3 1.8 17.5A2 2 0 0 0 3.5 20.5h17a2 2 0 0 0 1.7-3L13.7 3.3a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4"/><path d="M12 17h.01"/></svg>`;
@@ -296,23 +294,17 @@ const THEMES = [
   { id: "dark-fucsia", label: "Fúcsia", group: "neon", bg: "#170a14", sidebarBg: "#0f050d", cardBg: "#251020", accent: "#ec4899", gradient: "linear-gradient(135deg, #f472b6 0%, #ec4899 50%, #db2777 100%)" },
 ];
 
-let CURRENT_THEME = "light-default";
+let CURRENT_THEME = "dark-nebulosa";
 
 function applyTheme(themeId) {
   const theme = THEMES.find(t => t.id === themeId) || THEMES[0];
   CURRENT_THEME = theme.id;
   document.body.dataset.theme = theme.id;
   document.body.classList.toggle("theme-dark", theme.group !== "light");
-  document.getElementById("toggle-dark").innerHTML = theme.group !== "light" ? ICON_SUN : ICON_MOON;
   try { localStorage.setItem("painel_theme", theme.id); } catch (e) {}
   renderThemeGrid();
   if (ALL_BETS.length) renderAll(); // recria o gráfico com as cores certas
 }
-
-document.getElementById("toggle-dark").addEventListener("click", () => {
-  const atual = THEMES.find(t => t.id === CURRENT_THEME) || THEMES[0];
-  applyTheme(atual.group !== "light" ? "light-default" : "dark-default");
-});
 
 function renderThemeGrid() {
   const lightGrid = document.getElementById("theme-grid-light");
@@ -2593,8 +2585,8 @@ setupSortableHeaders(BANCA_HEADERS, "banca", renderBancasTable);
 setupSortableHeaders(CASA_HEADERS, "casa", () => renderCasaSummary(currentBets()));
 
 // aplica o tema salvo antes de tudo — migra do sistema antigo (só claro/escuro)
-// se a pessoa nunca escolheu um tema novo ainda
-document.getElementById("toggle-dark").innerHTML = ICON_MOON;
+// se a pessoa nunca escolheu um tema novo ainda. Sem nada salvo, o padrão
+// agora é o Nebulosa (em vez do claro de antes).
 try {
   const salvo = localStorage.getItem("painel_theme");
   if (salvo) {
@@ -2602,10 +2594,10 @@ try {
   } else if (localStorage.getItem("painel_dark_mode") === "1") {
     applyTheme("dark-default");
   } else {
-    applyTheme("light-default");
+    applyTheme("dark-nebulosa");
   }
 } catch (e) {
-  applyTheme("light-default");
+  applyTheme("dark-nebulosa");
 }
 
 // aplica a fonte salva
