@@ -272,9 +272,10 @@ const THEMES = [
   { id: "light-floresta", label: "Floresta", group: "light", bg: "#f3f1e9", sidebarBg: "#1b2b1e", cardBg: "#fdfcf7", accent: "#2f6b3a" },
   { id: "dark-default", label: "Padrão", group: "dark", bg: "#0f1626", sidebarBg: "#0a0f1e", cardBg: "#1a2338", accent: "#8bc34a" },
   { id: "dark-meianoite", label: "Meia-noite", group: "dark", bg: "#161326", sidebarBg: "#0f0c1d", cardBg: "#211c36", accent: "#9d6fe0" },
-  { id: "dark-grafite", label: "Grafite", group: "dark", bg: "#17181a", sidebarBg: "#101112", cardBg: "#212325", accent: "#d9a441" },
-  { id: "dark-esmeralda", label: "Esmeralda", group: "dark", bg: "#0d1a15", sidebarBg: "#081310", cardBg: "#132821", accent: "#17a673" },
-  { id: "dark-vinho", label: "Vinho", group: "dark", bg: "#1f1315", sidebarBg: "#160d0f", cardBg: "#2a1c1f", accent: "#c98a5e" },
+  { id: "dark-nebulosa", label: "Nebulosa", group: "dark", bg: "#0a0e1c", sidebarBg: "#06080f", cardBg: "#161a2e", accent: "#a855f7", gradient: "linear-gradient(135deg, #4f7df7 0%, #a855f7 55%, #ec4899 100%)" },
+  { id: "dark-cyber", label: "Cyber", group: "dark", bg: "#071318", sidebarBg: "#04090c", cardBg: "#0e1f27", accent: "#22d3ee", gradient: "linear-gradient(135deg, #22d3ee 0%, #0ea5e9 55%, #6366f1 100%)" },
+  { id: "dark-hacker", label: "Hacker", group: "dark", bg: "#050b07", sidebarBg: "#030502", cardBg: "#0e1c11", accent: "#39ff88", gradient: "linear-gradient(135deg, #a3ff5c 0%, #39ff88 55%, #10d68a 100%)" },
+  { id: "dark-lava", label: "Lava", group: "dark", bg: "#170b06", sidebarBg: "#0f0503", cardBg: "#241209", accent: "#fb923c", gradient: "linear-gradient(135deg, #fbbf24 0%, #fb923c 55%, #f43f5e 100%)" },
 ];
 
 let CURRENT_THEME = "light-default";
@@ -303,7 +304,7 @@ function renderThemeGrid() {
     <button class="theme-swatch ${t.id === CURRENT_THEME ? "active" : ""}" onclick="applyTheme('${t.id}')">
       <div class="theme-swatch-preview" style="background:${t.bg}">
         <div class="sidebar-strip" style="background:${t.sidebarBg}"></div>
-        <div class="content-strip"><span class="accent-dot" style="background:${t.accent}"></span></div>
+        <div class="content-strip"><span class="accent-dot" style="background:${t.gradient || t.accent}"></span></div>
       </div>
       <div class="theme-swatch-name">${t.label}</div>
     </button>
