@@ -773,7 +773,14 @@ document.getElementById("nav-historico").addEventListener("click", () => {
   ONLY_PENDING = false;
   ONLY_PENDING_TODAY = false;
   ONLY_PENDING_FUTURE = false;
+  ONLY_TODAY = true;
+  ONLY_YESTERDAY = false;
+  ACTIVE_MES = null; // um mês antigo travado aqui bloquearia o filtro de Hoje (mês diferente = 0 resultados)
+  ACTIVE_TIPSTER = null;
+  ACTIVE_CASA = null;
+  SORT_STATE.hist = { key: "data_hora_sort", dir: -1 }; // mais tarde pro mais cedo
   clearQuickFilterChips();
+  document.getElementById("filter-today").classList.add("active");
   switchView("historico");
 });
 document.getElementById("nav-ranking").addEventListener("click", () => switchView("ranking"));
