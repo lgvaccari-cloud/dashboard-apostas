@@ -652,6 +652,7 @@ function fecharMenuMobile() {
 }
 document.getElementById("mobile-menu-btn").addEventListener("click", abrirMenuMobile);
 document.getElementById("mobile-menu-backdrop").addEventListener("click", fecharMenuMobile);
+document.getElementById("mobile-topbar-wordmark").addEventListener("click", () => switchView("geral"));
 
 document.getElementById("nav-geral").addEventListener("click", () => switchView("geral"));
 document.getElementById("brand-home").addEventListener("click", () => switchView("geral"));
@@ -1545,6 +1546,7 @@ function closeNewBetModal() {
 document.getElementById("new-bet-btn").addEventListener("click", openNewBetModal);
 document.getElementById("new-bet-btn-mobile").addEventListener("click", openNewBetModal);
 document.getElementById("new-bet-cancel").addEventListener("click", closeNewBetModal);
+document.getElementById("new-bet-close-x").addEventListener("click", closeNewBetModal);
 document.getElementById("new-bet-overlay").addEventListener("click", (e) => {
   if (e.target.id === "new-bet-overlay") closeNewBetModal();
 });
