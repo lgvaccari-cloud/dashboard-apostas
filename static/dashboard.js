@@ -567,6 +567,7 @@ document.getElementById("mes-select").addEventListener("change", (e) => {
 
 // ---------- Barra "Filtros ativos" ----------
 function renderActiveFiltersBar() {
+  atualizarResumoFiltrosMobile();
   const bar = document.getElementById("active-filters-bar");
   const container = document.getElementById("active-filter-chips");
   const filtros = [];
@@ -604,6 +605,24 @@ document.getElementById("clear-all-filters").addEventListener("click", () => {
   renderChips();
   renderCasaChips();
   renderAll();
+});
+
+// ---------- Gaveta de filtros no mobile ----------
+// Resume Mês/Tipster/Casa ativos no próprio botão, pra não precisar da caixa
+// "Filtros ativos" separada (que só duplicava a mesma informação).
+function atualizarResumoFiltrosMobile() {
+  const label = document.getElementById("mobile-filters-toggle-label");
+  if (!label) return;
+  const partes = [];
+  if (ACTIVE_MES) partes.push(formatMesLabel(ACTIVE_MES));
+  if (ACTIVE_TIPSTER) partes.push(ACTIVE_TIPSTER);
+  if (ACTIVE_CASA) partes.push(ACTIVE_CASA);
+  label.textContent = partes.length ? partes.join(" · ") : "Filtros";
+}
+
+document.getElementById("mobile-filters-toggle").addEventListener("click", () => {
+  document.getElementById("filters-row").classList.toggle("mobile-expanded");
+  document.getElementById("mobile-filters-toggle").classList.toggle("expanded");
 });
 
 // ---------- Navegação entre visões ----------

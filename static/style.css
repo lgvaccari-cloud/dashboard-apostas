@@ -217,6 +217,7 @@ body {
 .layout { display: flex; min-height: 100vh; }
 .mobile-topbar { display: none; }
 .mobile-menu-backdrop { display: none; }
+.mobile-filters-toggle { display: none; }
 
 .sidebar {
   width: 220px;
@@ -1345,15 +1346,44 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   #view-bancas .cards-row { grid-template-columns: 1fr !important; }
   .modal-grid { grid-template-columns: 1fr; }
   .modal-span-2 { grid-column: span 1; }
-  /* três dropdowns lado a lado mesmo em tela estreita — economiza altura */
-  .filters-row { gap: 8px; flex-wrap: nowrap; }
-  .filter-group { flex: 1 1 0; min-width: 0; }
-  .mobile-filter-select {
-    min-width: 0;
+  .mobile-filters-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     width: 100%;
-    padding: 9px 8px;
-    text-overflow: ellipsis;
+    padding: 11px 14px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--card-bg);
+    color: var(--text);
+    font-size: 13.5px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
   }
+  .mobile-filters-toggle svg:first-child { width: 15px; height: 15px; flex-shrink: 0; color: var(--muted); }
+  #mobile-filters-toggle-label { flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mobile-filters-chevron { width: 15px; height: 15px; flex-shrink: 0; transition: transform 0.18s ease; }
+  .mobile-filters-toggle.expanded .mobile-filters-chevron { transform: rotate(180deg); }
+  /* os 3 seletores ficam escondidos até abrir a gaveta — cada um numa linha
+     própria quando aberto, em vez de espremidos lado a lado */
+  .filters-row {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .filters-row.mobile-expanded { display: flex; }
+  .filter-group { width: 100%; }
+  .mobile-filter-select { width: 100%; padding: 9px 10px; }
+  /* essa caixa ficava duplicando a mesma informação que já aparece no
+     próprio seletor (ou no resumo do botão "Filtros") — só ocupa espaço */
+  #active-filters-bar { display: none !important; }
 
   /* nunca deixa o Safari dar zoom automático ao focar um campo (precisa de 16px+) */
   .edit-input, .mobile-filter-select, .modal-grid input, .modal-grid select {
@@ -1415,7 +1445,7 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
 }
 
 @media (max-width: 480px) {
-  .topbar-actions { width: 100%; justify-content: space-between; }
+  .topbar-actions { width: 100%; }
 }
 
 /* Alerta de lucro que não bate com o planilhamento — fica colado no valor */
