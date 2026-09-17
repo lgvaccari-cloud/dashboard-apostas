@@ -781,7 +781,6 @@ document.getElementById("nav-historico").addEventListener("click", () => {
   ONLY_PENDING_FUTURE = false;
   ONLY_TODAY = true;
   ONLY_YESTERDAY = false;
-  ACTIVE_MES = null; // um mês antigo travado aqui bloquearia o filtro de Hoje (mês diferente = 0 resultados)
   ACTIVE_TIPSTER = null;
   ACTIVE_CASA = null;
   SORT_STATE.hist = { key: "data_hora_sort", dir: -1 }; // mais tarde pro mais cedo
@@ -1360,7 +1359,15 @@ function renderBetsCards(bets) {
 // usado só na tabela do Histórico — soma os filtros rápidos (pendentes,
 // hoje, ontem) por cima do filtro de tipster/mês, sem afetar os cards/gráfico
 function historicoBets() {
-  let result = currentBets();
+  // Um filtro de dia (Hoje/Ontem/Pend.hoje/Pend.futuro) é mais específico
+  // que o mês selecionado — se os dois brigassem (mês de agosto + "hoje" é
+  // setembro), sobraria 0 resultado. Em vez de apagar o mês globalmente
+  // (isso quebraria a Visão geral ao voltar pra lá), só ignora o filtro de
+  // mês AQUI, localmente, sem mexer no ACTIVE_MES de verdade.
+  const diaFiltroAtivo = ONLY_TODAY || ONLY_YESTERDAY || ONLY_PENDING_TODAY || ONLY_PENDING_FUTURE;
+  let result = diaFiltroAtivo
+    ? ALL_BETS.filter(b => (!ACTIVE_TIPSTER || b.tipster === ACTIVE_TIPSTER) && (!ACTIVE_CASA || b.casa === ACTIVE_CASA))
+    : currentBets();
   if (ONLY_PENDING) result = result.filter(b => !isResolved(b));
   if (ONLY_TODAY) result = result.filter(b => b.data_iso === todayISO());
   if (ONLY_YESTERDAY) result = result.filter(b => b.data_iso === yesterdayISO());
