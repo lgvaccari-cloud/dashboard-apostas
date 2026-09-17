@@ -10,7 +10,6 @@
   --red: #d94436;
   --red-bg: #fbe9e7;
   --accent: #6fa72e;
-  --header-text: #eef1f6;
   --radius: 14px;
   --font-family: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-family: var(--font-family);
@@ -112,9 +111,7 @@ body[data-theme="dark-cyber"] {
   --accent-gradient: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 55%, #6366f1 100%);
 }
 
-/* Hacker — verde-limão neon sobre fundo quase preto, estilo terminal.
-   O gradiente é bem claro, então o texto do cabeçalho do card vira verde
-   escuro (--header-text) em vez de branco, senão fica ilegível. */
+/* Hacker — verde-limão neon sobre fundo quase preto, estilo terminal. */
 body[data-theme="dark-hacker"] {
   --bg: #050b07; --sidebar-bg: #030502; --card-bg: #0e1c11; --border: #204028;
   --text: #dbf8e1; --muted: #7cab89;
@@ -122,12 +119,10 @@ body[data-theme="dark-hacker"] {
   --red: #ff4d6a; --red-bg: rgba(255, 77, 106, 0.14);
   --accent: #39ff88;
   --accent-gradient: linear-gradient(135deg, #a3ff5c 0%, #39ff88 55%, #10d68a 100%);
-  --header-text: #04321a;
 }
 
 /* Lava — laranja neon entrando em vermelho, fundo escuro puxado pro marrom
-   bem profundo. A ponta âmbar do gradiente é clara, então o cabeçalho do
-   card também usa texto escuro. */
+   bem profundo. */
 body[data-theme="dark-lava"] {
   --bg: #170b06; --sidebar-bg: #0f0503; --card-bg: #241209; --border: #442414;
   --text: #fceee3; --muted: #c2967d;
@@ -135,7 +130,6 @@ body[data-theme="dark-lava"] {
   --red: #ff4444; --red-bg: rgba(255, 68, 68, 0.14);
   --accent: #fb923c;
   --accent-gradient: linear-gradient(135deg, #fbbf24 0%, #fb923c 55%, #f43f5e 100%);
-  --header-text: #401207;
 }
 
 /* Fúcsia — rosa neon entrando em magenta profundo. */
@@ -146,7 +140,6 @@ body[data-theme="dark-fucsia"] {
   --red: #ff4444; --red-bg: rgba(255, 68, 68, 0.14);
   --accent: #ec4899;
   --accent-gradient: linear-gradient(135deg, #f472b6 0%, #ec4899 50%, #db2777 100%);
-  --header-text: #3d0620;
 }
 
 body.theme-dark .bets-table tbody tr:nth-child(even) { background: rgba(255,255,255,0.03); }
@@ -233,10 +226,16 @@ body {
   padding: 22px 16px;
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 18px;
   flex-shrink: 0;
 }
-.brand, .login-brand { display: flex; align-items: center; gap: 10px; }
+.sidebar-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+.brand, .login-brand { display: flex; align-items: center; gap: 10px; padding: 0 12px; }
+.login-brand { padding: 0; }
 .brand-mark {
   width: 34px; height: 34px;
   background: var(--accent-gradient, var(--accent));
@@ -259,7 +258,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 16px;
+  padding: 0 12px;
 }
 .app-wordmark-icon {
   width: 20px;
@@ -325,6 +324,7 @@ body {
   color: var(--text);
 }
 
+.side-nav-group { display: flex; flex-direction: column; gap: 4px; }
 .side-nav { display: flex; flex-direction: column; gap: 4px; }
 .side-item {
   padding: 10px 12px;
@@ -528,7 +528,6 @@ body {
 body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
 
 .logout {
-  margin-top: auto;
   color: var(--muted);
   font-size: 14px;
   text-decoration: none;
@@ -737,14 +736,14 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   justify-content: space-between;
   gap: 12px;
   padding: 13px 16px;
-  background: var(--accent-gradient, var(--sidebar-bg));
+  background: var(--sidebar-bg);
   border-radius: 13px 13px 0 0;
   cursor: pointer;
   user-select: none;
 }
 .bet-card-chevron {
   flex-shrink: 0;
-  color: var(--header-text, #eef1f6);
+  color: #eef1f6;
   opacity: 0.55;
   font-size: 12px;
   transition: transform 0.18s ease;
@@ -762,7 +761,7 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
 .bet-card-title {
   font-size: 14.5px;
   font-weight: 600;
-  color: var(--header-text, #eef1f6);
+  color: #eef1f6;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
