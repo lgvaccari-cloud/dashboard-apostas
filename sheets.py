@@ -32,6 +32,94 @@ EDITABLE_FIELDS = {
 }
 
 
+def _get_or_create_worksheet(nome_aba, headers):
+    """Pega uma aba pelo nome (ex: 'Tipsters', 'Casas'), criando com o
+    cabeçalho certo se ela ainda não existir na planilha."""
+    client = _get_client()
+    sheet_id = os.environ["SHEET_ID"]
+    sh = client.open_by_key(sheet_id)
+    try:
+        return sh.worksheet(nome_aba)
+    except gspread.exceptions.WorksheetNotFound:
+        ws = sh.add_worksheet(title=nome_aba, rows=200, cols=max(len(headers), 2))
+        ws.update(range_name="A1", values=[headers])
+        return ws
+
+
+# ---------- Cadastro de tipsters (Configurações > Tipsters) ----------
+
+def listar_tipsters():
+    """[{nome, status}], status sempre "Ativo" ou "Inativo"."""
+    ws = _get_or_create_worksheet("Tipsters", ["Nome", "Status"])
+    rows = ws.get_all_values()[1:]
+    return [
+        {"nome": r[0].strip(), "status": (r[1].strip() if len(r) > 1 and r[1].strip() else "Ativo")}
+        for r in rows if r and r[0].strip()
+    ]
+
+
+def adicionar_tipster(nome):
+    nome = (nome or "").strip()
+    if not nome:
+        raise ValueError("Nome não pode ficar vazio.")
+    ws = _get_or_create_worksheet("Tipsters", ["Nome", "Status"])
+    existentes = [r[0].strip().lower() for r in ws.get_all_values()[1:] if r and r[0].strip()]
+    if nome.lower() in existentes:
+        raise ValueError("Esse tipster já está cadastrado.")
+    ws.append_row([nome, "Ativo"], value_input_option="USER_ENTERED")
+
+
+def atualizar_status_tipster(nome, status):
+    if status not in ("Ativo", "Inativo"):
+        raise ValueError("Status inválido.")
+    ws = _get_or_create_worksheet("Tipsters", ["Nome", "Status"])
+    rows = ws.get_all_values()
+    for i, r in enumerate(rows[1:], start=2):
+        if r and r[0].strip().lower() == (nome or "").strip().lower():
+            ws.update(range_name=f"B{i}", values=[[status]])
+            return
+    raise ValueError("Tipster não encontrado.")
+
+
+def remover_tipster(nome):
+    ws = _get_or_create_worksheet("Tipsters", ["Nome", "Status"])
+    rows = ws.get_all_values()
+    for i, r in enumerate(rows[1:], start=2):
+        if r and r[0].strip().lower() == (nome or "").strip().lower():
+            ws.delete_rows(i)
+            return
+    raise ValueError("Tipster não encontrado.")
+
+
+# ---------- Cadastro de casas (Configurações > Casas) ----------
+
+def listar_casas():
+    ws = _get_or_create_worksheet("Casas", ["Nome"])
+    rows = ws.get_all_values()[1:]
+    return [r[0].strip() for r in rows if r and r[0].strip()]
+
+
+def adicionar_casa(nome):
+    nome = (nome or "").strip()
+    if not nome:
+        raise ValueError("Nome não pode ficar vazio.")
+    ws = _get_or_create_worksheet("Casas", ["Nome"])
+    existentes = [r[0].strip().lower() for r in ws.get_all_values()[1:] if r and r[0].strip()]
+    if nome.lower() in existentes:
+        raise ValueError("Essa casa já está cadastrada.")
+    ws.append_row([nome], value_input_option="USER_ENTERED")
+
+
+def remover_casa(nome):
+    ws = _get_or_create_worksheet("Casas", ["Nome"])
+    rows = ws.get_all_values()
+    for i, r in enumerate(rows[1:], start=2):
+        if r and r[0].strip().lower() == (nome or "").strip().lower():
+            ws.delete_rows(i)
+            return
+    raise ValueError("Casa não encontrada.")
+
+
 def _get_client():
     """Autentica no Google Sheets usando a service account.
 

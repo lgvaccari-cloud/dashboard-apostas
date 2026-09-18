@@ -3,7 +3,7 @@ from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 import requests
 
-from sheets import fetch_bets, fetch_bets_for_mes, update_bet, add_bet, fetch_bancas_for_mes, update_banca, delete_bet
+from sheets import fetch_bets, fetch_bets_for_mes, update_bet, add_bet, fetch_bancas_for_mes, update_banca, delete_bet, listar_tipsters, adicionar_tipster, atualizar_status_tipster, remover_tipster, listar_casas, adicionar_casa, remover_casa
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "troque-essa-chave-em-producao")
@@ -215,6 +215,89 @@ def api_resolve_casa_image():
         return jsonify(resp.json()), resp.status_code
     except requests.RequestException as e:
         return jsonify({"status": "error", "message": f"Não consegui falar com o bot: {e}"}), 502
+
+
+@app.route("/api/tipsters", methods=["GET"])
+@login_required
+def api_listar_tipsters():
+    try:
+        return jsonify({"ok": True, "tipsters": listar_tipsters()})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/tipsters", methods=["POST"])
+@login_required
+def api_adicionar_tipster():
+    try:
+        payload = request.get_json(force=True)
+        adicionar_tipster(payload.get("nome", ""))
+        return jsonify({"ok": True})
+    except ValueError as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/tipsters/status", methods=["POST"])
+@login_required
+def api_status_tipster():
+    try:
+        payload = request.get_json(force=True)
+        atualizar_status_tipster(payload.get("nome", ""), payload.get("status", ""))
+        return jsonify({"ok": True})
+    except ValueError as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/tipsters/remover", methods=["POST"])
+@login_required
+def api_remover_tipster():
+    try:
+        payload = request.get_json(force=True)
+        remover_tipster(payload.get("nome", ""))
+        return jsonify({"ok": True})
+    except ValueError as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/casas", methods=["GET"])
+@login_required
+def api_listar_casas():
+    try:
+        return jsonify({"ok": True, "casas": listar_casas()})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/casas", methods=["POST"])
+@login_required
+def api_adicionar_casa():
+    try:
+        payload = request.get_json(force=True)
+        adicionar_casa(payload.get("nome", ""))
+        return jsonify({"ok": True})
+    except ValueError as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/casas/remover", methods=["POST"])
+@login_required
+def api_remover_casa():
+    try:
+        payload = request.get_json(force=True)
+        remover_casa(payload.get("nome", ""))
+        return jsonify({"ok": True})
+    except ValueError as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 
 if __name__ == "__main__":
