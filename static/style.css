@@ -169,6 +169,10 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  background: linear-gradient(rgba(5, 7, 13, 0.55), rgba(5, 7, 13, 0.55)), url("/static/login-bg.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 .login-wrap {
   display: flex;
