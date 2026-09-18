@@ -2,7 +2,8 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Planilheiro.bet</title>
   <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32.png') }}">
   <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16.png') }}">
@@ -149,11 +150,30 @@
       <section class="bottom-row">
         <div class="card chart-card">
           <div class="card-head-block">
-            <h2 id="chart-title">Resultado acumulado</h2>
-            <p class="chart-sub" id="chart-sub">Linha acumulada, barras com o resultado de cada dia</p>
+            <div class="chart-head-row">
+              <div>
+                <h2 id="chart-title">Resultado acumulado</h2>
+                <p class="chart-sub" id="chart-sub">Linha acumulada, barras com o resultado de cada dia</p>
+              </div>
+              <div class="hist-view-toggle" id="chart-view-toggle">
+                <button type="button" class="toggle-btn active" id="chart-view-grafico-btn">Gráfico</button>
+                <button type="button" class="toggle-btn" id="chart-view-calendario-btn">Calendário</button>
+              </div>
+            </div>
             <div class="chart-summary" id="chart-summary">—</div>
+            <div class="calendar-nav-row" id="calendar-nav-row" style="display:none">
+              <button type="button" class="calendar-nav-btn" id="calendar-prev-month" aria-label="Mês anterior">‹</button>
+              <span class="calendar-nav-label" id="calendar-nav-label">—</span>
+              <button type="button" class="calendar-nav-btn" id="calendar-next-month" aria-label="Próximo mês">›</button>
+            </div>
           </div>
-          <canvas id="results-chart" height="110"></canvas>
+          <div class="chart-viz-wrap" id="chart-viz-wrap">
+            <canvas id="results-chart"></canvas>
+            <div class="calendar-grid-wrap" id="calendar-grid-wrap">
+              <div class="calendar-weekdays" id="calendar-weekdays"></div>
+              <div class="calendar-days" id="calendar-days"></div>
+            </div>
+          </div>
         </div>
 
         <div class="card side-card">
