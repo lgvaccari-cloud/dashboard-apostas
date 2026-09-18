@@ -1426,6 +1426,16 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
     font-size: 12.5px;
     flex-shrink: 0;
   }
+  /* o gradiente em texto (background-clip: text) é o que causa o bug de
+     desfoque do Safari em barras fixas no iOS — aqui na barra mobile a
+     gente troca por cor sólida, que nunca borra. A versão com gradiente
+     continua normal na sidebar do desktop. */
+  .mobile-topbar .app-wordmark-text {
+    background: none;
+    -webkit-background-clip: unset;
+    background-clip: unset;
+    color: var(--accent);
+  }
   /* o botão original fica escondido — o da barra fixa faz esse papel agora */
   #new-bet-btn { display: none; }
   /* o topbar virou position:fixed (sai do fluxo normal), então o conteúdo
