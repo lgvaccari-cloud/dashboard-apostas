@@ -152,6 +152,7 @@ body.theme-dark .progress-track { background: rgba(255,255,255,0.08); }
 html {
   overflow-x: hidden;
   width: 100%;
+  background: #0a0e1c;
 }
 
 body {
