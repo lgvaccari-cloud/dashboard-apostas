@@ -1140,12 +1140,11 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
 /* altura fixa: gráfico e calendário são camadas absolutas dentro do mesmo
    retângulo, então trocar de chave nunca muda o tamanho do card. */
 .chart-viz-wrap { position: relative; height: 320px; }
-.chart-viz-wrap canvas { position: absolute; inset: 0; }
+.chart-viz-wrap canvas { display: block; width: 100% !important; height: 100% !important; }
 .calendar-grid-wrap {
-  position: absolute;
-  inset: 0;
   display: none;
   flex-direction: column;
+  height: 100%;
   overflow-y: auto;
 }
 .chart-viz-wrap.showing-calendar canvas { display: none; }
