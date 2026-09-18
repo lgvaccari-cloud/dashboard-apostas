@@ -2536,6 +2536,17 @@ function renderChart(resolvedBets) {
   const corVerde = getComputedStyle(document.body).getPropertyValue("--green").trim() || "#8bc34a";
   const corVermelha = getComputedStyle(document.body).getPropertyValue("--red").trim() || "#e2453c";
 
+  // converte "#8bc34a" -> "rgba(139,195,74,0.12)", pro preenchimento
+  // semitransparente sob a linha do gráfico acompanhar a cor do tema
+  function hexParaRgba(hex, alpha) {
+    const limpo = (hex || "").replace("#", "");
+    if (limpo.length !== 6) return `rgba(111,167,46,${alpha})`; // fallback se vier algo inesperado
+    const r = parseInt(limpo.slice(0, 2), 16);
+    const g = parseInt(limpo.slice(2, 4), 16);
+    const b = parseInt(limpo.slice(4, 6), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
   // desenha o valor de cada barra em cima dela — só quando um mês específico
   // está filtrado (com muitos dias juntos, os números viram bagunça), e só
   // fora do mobile (a tela é estreita demais pra caber os números)
@@ -2580,12 +2591,12 @@ function renderChart(resolvedBets) {
           type: "line",
           label: "Acumulado",
           data: acumuladoDisplay,
-          borderColor: "#6fa72e",
-          backgroundColor: "rgba(111,167,46,0.12)",
+          borderColor: corVerde,
+          backgroundColor: hexParaRgba(corVerde, 0.12),
           fill: true,
           tension: 0.35,
           pointRadius: 2,
-          borderWidth: 2,
+          borderWidth: 3,
           order: 1,
           yAxisID: "y",
         },
