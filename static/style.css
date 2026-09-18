@@ -356,6 +356,15 @@ body {
 .side-item:hover { color: white; }
 
 .table-card { padding: 0; overflow-x: auto; }
+.table-card-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.table-card-head-row .modal-btn { flex-shrink: 0; }
 .bets-table {
   width: 100%;
   border-collapse: collapse;
@@ -1403,6 +1412,13 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
     left: 0;
     right: 0;
     z-index: 998;
+    /* iOS Safari às vezes borra o conteúdo de barras fixas quando tem
+       texto com gradiente (background-clip: text) lá dentro — isso força
+       o Safari a desenhar a barra inteira numa camada própria, nítida,
+       em vez de reamostrar ela borrada. */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    will-change: transform;
   }
   .mobile-new-bet-btn {
     margin-left: auto;
