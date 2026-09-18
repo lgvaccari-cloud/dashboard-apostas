@@ -41,6 +41,9 @@ let RANK_ONLY_YESTERDAY = false;
 let AUTO_MES_APPLIED = false;
 let chartInstance = null;
 let CURRENT_VIEW = "geral";
+let CHART_VIEW_MODE = "grafico"; // "grafico" | "calendario"
+let CALENDAR_YEAR = null;
+let CALENDAR_MONTH = null; // 0-indexed
 let SHOW_BRL = true;
 let EDITING_IDX = null;
 let CURRENT_HISTORICO_BETS = [];
@@ -2327,6 +2330,7 @@ function renderAll() {
     ACTIVE_TIPSTER ? `Resultado acumulado (${ACTIVE_TIPSTER})` : "Resultado acumulado";
 
   renderChart(resolved);
+  renderCalendarView();
   renderCasaSummary(bets);
   renderTipsterSummary(bets);
   renderTipoSummary(bets);
@@ -2605,7 +2609,7 @@ function renderChart(resolvedBets) {
     plugins: [barValueLabelPlugin],
     options: {
       responsive: true,
-      ...(window.innerWidth <= 900 ? { aspectRatio: 1.3 } : {}),
+      maintainAspectRatio: false,
       layout: { padding: { top: 24 } },
       interaction: { mode: "index", intersect: false },
       plugins: {
@@ -2630,6 +2634,102 @@ function renderChart(resolvedBets) {
       },
     },
   });
+}
+
+// ---------- Calendário de resultados (alterna com o gráfico, mesmo espaço) ----------
+const MESES_CURTOS = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+
+// mesma base do gráfico/cards, mas sem o filtro de mês — o calendário navega
+// os meses por conta própria (só respeita tipster/casa, como o histórico).
+function betsParaCalendario() {
+  return ALL_BETS.filter(b =>
+    (!ACTIVE_TIPSTER || b.tipster === ACTIVE_TIPSTER) &&
+    (!ACTIVE_CASA || b.casa === ACTIVE_CASA)
+  );
+}
+
+function inicializarMesCalendario() {
+  if (CALENDAR_YEAR !== null && CALENDAR_MONTH !== null) return;
+  const resolvidas = betsParaCalendario().filter(b => isResolved(b) && b.data_iso).sort((a, b) => b.data_iso.localeCompare(a.data_iso));
+  const base = resolvidas.length ? resolvidas[0].data_iso : todayISO();
+  const [y, m] = base.split("-");
+  CALENDAR_YEAR = Number(y);
+  CALENDAR_MONTH = Number(m) - 1;
+}
+
+function setChartView(mode) {
+  CHART_VIEW_MODE = mode;
+  document.getElementById("chart-view-grafico-btn").classList.toggle("active", mode === "grafico");
+  document.getElementById("chart-view-calendario-btn").classList.toggle("active", mode === "calendario");
+  document.getElementById("calendar-nav-row").style.display = mode === "calendario" ? "flex" : "none";
+  document.getElementById("chart-viz-wrap").classList.toggle("showing-calendar", mode === "calendario");
+  if (mode === "grafico" && chartInstance) setTimeout(() => chartInstance.resize(), 50);
+}
+
+document.getElementById("chart-view-grafico-btn").addEventListener("click", () => setChartView("grafico"));
+document.getElementById("chart-view-calendario-btn").addEventListener("click", () => setChartView("calendario"));
+
+document.getElementById("calendar-prev-month").addEventListener("click", () => {
+  inicializarMesCalendario();
+  CALENDAR_MONTH -= 1;
+  if (CALENDAR_MONTH < 0) { CALENDAR_MONTH = 11; CALENDAR_YEAR -= 1; }
+  renderCalendarView();
+});
+document.getElementById("calendar-next-month").addEventListener("click", () => {
+  inicializarMesCalendario();
+  CALENDAR_MONTH += 1;
+  if (CALENDAR_MONTH > 11) { CALENDAR_MONTH = 0; CALENDAR_YEAR += 1; }
+  renderCalendarView();
+});
+
+function renderCalendarView() {
+  inicializarMesCalendario();
+
+  document.getElementById("calendar-nav-label").textContent = `${MESES_CURTOS[CALENDAR_MONTH]}/${CALENDAR_YEAR}`;
+
+  const weekdaysEl = document.getElementById("calendar-weekdays");
+  if (!weekdaysEl.childElementCount) {
+    weekdaysEl.innerHTML = ["D", "S", "T", "Q", "Q", "S", "S"].map(d => `<span>${d}</span>`).join("");
+  }
+
+  const prefixo = `${CALENDAR_YEAR}-${String(CALENDAR_MONTH + 1).padStart(2, "0")}-`;
+  const porDiaUni = {};
+  const porDiaReais = {};
+  const porDiaOps = {};
+  betsParaCalendario().forEach(b => {
+    if (!isResolved(b) || !b.data_iso || !b.data_iso.startsWith(prefixo)) return;
+    porDiaUni[b.data_iso] = (porDiaUni[b.data_iso] || 0) + b.lucro_uni;
+    porDiaReais[b.data_iso] = (porDiaReais[b.data_iso] || 0) + b.lucro_reais;
+    porDiaOps[b.data_iso] = (porDiaOps[b.data_iso] || 0) + 1;
+  });
+
+  const primeiroDiaSemana = new Date(CALENDAR_YEAR, CALENDAR_MONTH, 1).getDay();
+  const diasNoMes = new Date(CALENDAR_YEAR, CALENDAR_MONTH + 1, 0).getDate();
+
+  let html = "";
+  for (let i = 0; i < primeiroDiaSemana; i++) html += `<div class="calendar-day empty"></div>`;
+
+  for (let dia = 1; dia <= diasNoMes; dia++) {
+    const iso = `${prefixo}${String(dia).padStart(2, "0")}`;
+    const temOps = Object.prototype.hasOwnProperty.call(porDiaOps, iso);
+    if (!temOps) {
+      html += `<div class="calendar-day"><span class="cd-num">${dia}</span></div>`;
+      continue;
+    }
+    const uni = porDiaUni[iso];
+    const reais = porDiaReais[iso];
+    const cls = uni > 0 ? "positive" : uni < 0 ? "negative" : "";
+    const ops = porDiaOps[iso];
+    html += `
+      <div class="calendar-day ${cls}">
+        <span class="cd-num">${dia}</span>
+        <span class="cd-val">${fmtDual(uni, reais, true)}</span>
+        <span class="cd-ops">${ops} op${ops === 1 ? "" : "s"}</span>
+      </div>
+    `;
+  }
+
+  document.getElementById("calendar-days").innerHTML = html;
 }
 
 document.getElementById("refresh-btn").addEventListener("click", async () => {

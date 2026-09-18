@@ -1105,6 +1105,7 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
 .chart-card { padding: 20px 22px; }
 .card-head-block h2 { margin: 0; font-size: 16px; }
 .chart-sub { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); }
+.chart-head-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .chart-summary {
   display: flex;
   flex-direction: column;
@@ -1120,6 +1121,72 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   color: var(--muted);
 }
 .chart-summary b { font-weight: 700; }
+
+.calendar-nav-row { display: flex; align-items: center; gap: 10px; margin: -6px 0 14px; }
+.calendar-nav-btn {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 26px; height: 26px;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+}
+.calendar-nav-btn:hover { filter: brightness(0.96); }
+.calendar-nav-label { font-size: 13px; font-weight: 700; color: var(--text); min-width: 110px; text-align: center; }
+
+/* altura fixa: gráfico e calendário são camadas absolutas dentro do mesmo
+   retângulo, então trocar de chave nunca muda o tamanho do card. */
+.chart-viz-wrap { position: relative; height: 320px; }
+.chart-viz-wrap canvas { position: absolute; inset: 0; }
+.calendar-grid-wrap {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.chart-viz-wrap.showing-calendar canvas { display: none; }
+.chart-viz-wrap.showing-calendar .calendar-grid-wrap { display: flex; }
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+.calendar-weekdays span { text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); }
+.calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 6px;
+  flex: 1;
+  min-height: 0;
+}
+.calendar-day {
+  border-radius: 8px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+}
+.calendar-day.empty { background: transparent; border-color: transparent; }
+.calendar-day .cd-num { font-size: 11px; color: var(--muted); }
+.calendar-day .cd-val { font-size: 11.5px; font-weight: 700; }
+.calendar-day .cd-ops { font-size: 10px; color: var(--muted); }
+.calendar-day.positive { background: color-mix(in srgb, var(--green) 14%, var(--card-bg)); border-color: var(--green); }
+.calendar-day.positive .cd-num { color: var(--text); }
+.calendar-day.positive .cd-val { color: var(--green); }
+.calendar-day.negative { background: color-mix(in srgb, var(--red) 14%, var(--card-bg)); border-color: var(--red); }
+.calendar-day.negative .cd-num { color: var(--text); }
+.calendar-day.negative .cd-val { color: var(--red); }
 
 .side-card h2 { margin: 0 0 4px; font-size: 16px; }
 .side-metric { padding: 14px 0; border-top: 1px solid var(--border); }
