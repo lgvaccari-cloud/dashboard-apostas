@@ -48,31 +48,41 @@ def _get_or_create_worksheet(nome_aba, headers):
 
 # ---------- Cadastro de tipsters (Configurações > Tipsters) ----------
 
+TIPOS_TIPSTER_VALIDOS = {"Pré", "Live", "Pré + Live"}
+
+
 def listar_tipsters():
-    """[{nome, status}], status sempre "Ativo" ou "Inativo"."""
-    ws = _get_or_create_worksheet("Tipsters", ["Nome", "Status"])
+    """[{nome, status, tipo}], status sempre "Ativo" ou "Inativo"."""
+    ws = _get_or_create_worksheet("Tipsters", ["Nome", "Status", "Tipo"])
     rows = ws.get_all_values()[1:]
     return [
-        {"nome": r[0].strip(), "status": (r[1].strip() if len(r) > 1 and r[1].strip() else "Ativo")}
+        {
+            "nome": r[0].strip(),
+            "status": (r[1].strip() if len(r) > 1 and r[1].strip() else "Ativo"),
+            "tipo": (r[2].strip() if len(r) > 2 and r[2].strip() else ""),
+        }
         for r in rows if r and r[0].strip()
     ]
 
 
-def adicionar_tipster(nome):
+def adicionar_tipster(nome, tipo):
     nome = (nome or "").strip()
     if not nome:
         raise ValueError("Nome não pode ficar vazio.")
-    ws = _get_or_create_worksheet("Tipsters", ["Nome", "Status"])
+    if tipo not in TIPOS_TIPSTER_VALIDOS:
+        raise ValueError("Escolha se o tipster é Pré, Live ou Pré + Live.")
+    ws = _get_or_create_worksheet("Tipsters", ["Nome", "Status", "Tipo"])
     existentes = [r[0].strip().lower() for r in ws.get_all_values()[1:] if r and r[0].strip()]
     if nome.lower() in existentes:
         raise ValueError("Esse tipster já está cadastrado.")
-    ws.append_row([nome, "Ativo"], value_input_option="USER_ENTERED")
+    ws.append_row([nome, "Ativo", tipo], value_input_option="USER_ENTERED")
+
 
 
 def atualizar_status_tipster(nome, status):
     if status not in ("Ativo", "Inativo"):
         raise ValueError("Status inválido.")
-    ws = _get_or_create_worksheet("Tipsters", ["Nome", "Status"])
+    ws = _get_or_create_worksheet("Tipsters", ["Nome", "Status", "Tipo"])
     rows = ws.get_all_values()
     for i, r in enumerate(rows[1:], start=2):
         if r and r[0].strip().lower() == (nome or "").strip().lower():
@@ -82,7 +92,7 @@ def atualizar_status_tipster(nome, status):
 
 
 def remover_tipster(nome):
-    ws = _get_or_create_worksheet("Tipsters", ["Nome", "Status"])
+    ws = _get_or_create_worksheet("Tipsters", ["Nome", "Status", "Tipo"])
     rows = ws.get_all_values()
     for i, r in enumerate(rows[1:], start=2):
         if r and r[0].strip().lower() == (nome or "").strip().lower():

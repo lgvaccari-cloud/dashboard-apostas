@@ -231,7 +231,7 @@ def api_listar_tipsters():
 def api_adicionar_tipster():
     try:
         payload = request.get_json(force=True)
-        adicionar_tipster(payload.get("nome", ""))
+        adicionar_tipster(payload.get("nome", ""), payload.get("tipo", ""))
         return jsonify({"ok": True})
     except ValueError as e:
         return jsonify({"ok": False, "error": str(e)}), 400
