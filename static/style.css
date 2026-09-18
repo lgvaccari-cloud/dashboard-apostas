@@ -53,14 +53,14 @@ body[data-theme="light-floresta"] {
 
 /* escuros (azulado escuro, nunca preto puro) */
 body.theme-dark {
-  --bg: #14171c; --sidebar-bg: #0d0f13; --card-bg: #1f2329; --border: #343a42;
+  --bg: #121720; --sidebar-bg: #0c0f17; --card-bg: #1d232f; --border: #303849;
   --text: #e7ebf7; --muted: #8b93b3;
   --green: #8bc34a; --green-bg: rgba(139, 195, 74, 0.14);
   --red: #ef5350; --red-bg: rgba(239, 83, 80, 0.14);
   --accent: #8bc34a;
 }
 body[data-theme="dark-meianoite"] {
-  --bg: #14171c; --sidebar-bg: #0d0f13; --card-bg: #1f2329; --border: #343a42;
+  --bg: #151520; --sidebar-bg: #0e0e17; --card-bg: #20202e; --border: #35364a;
   --text: #eae6f7; --muted: #a094c0;
   --green: #7fce9a; --green-bg: rgba(127, 206, 154, 0.14);
   --red: #f2716b; --red-bg: rgba(242, 113, 107, 0.14);
@@ -78,7 +78,7 @@ body[data-theme="dark-carvao"] {
 
 /* Cobre — marrom quente com o destaque em cobre/bronze. */
 body[data-theme="dark-cobre"] {
-  --bg: #14171c; --sidebar-bg: #0d0f13; --card-bg: #1f2329; --border: #343a42;
+  --bg: #171618; --sidebar-bg: #0f0e10; --card-bg: #232223; --border: #3b383b;
   --text: #f2e8e1; --muted: #ab9186;
   --green: #79c98f; --green-bg: rgba(121, 201, 143, 0.14);
   --red: #e2695f; --red-bg: rgba(226, 105, 95, 0.14);
@@ -87,7 +87,7 @@ body[data-theme="dark-cobre"] {
 
 /* Safira — azul profundo, o destaque é um azul mais vivo. */
 body[data-theme="dark-safira"] {
-  --bg: #14171c; --sidebar-bg: #0d0f13; --card-bg: #1f2329; --border: #343a42;
+  --bg: #111620; --sidebar-bg: #0b0f16; --card-bg: #1c2331; --border: #303a4c;
   --text: #e6edfa; --muted: #8b9dc4;
   --green: #5fce9a; --green-bg: rgba(95, 206, 154, 0.14);
   --red: #ef6f6b; --red-bg: rgba(239, 111, 107, 0.14);
@@ -107,7 +107,7 @@ body[data-theme="dark-nebulosa"] {
 
 /* Cyber — ciano neon entrando em azul/índigo, visual de terminal high-tech. */
 body[data-theme="dark-cyber"] {
-  --bg: #14171c; --sidebar-bg: #0d0f13; --card-bg: #1f2329; --border: #343a42;
+  --bg: #0f151a; --sidebar-bg: #090d10; --card-bg: #182128; --border: #2a3a43;
   --text: #e0f7fb; --muted: #7ea6ad;
   --green: #34d399; --green-bg: rgba(52, 211, 153, 0.14);
   --red: #f87171; --red-bg: rgba(248, 113, 113, 0.14);
@@ -117,7 +117,7 @@ body[data-theme="dark-cyber"] {
 
 /* Hacker — verde-limão neon sobre fundo quase preto, estilo terminal. */
 body[data-theme="dark-hacker"] {
-  --bg: #14171c; --sidebar-bg: #0d0f13; --card-bg: #1f2329; --border: #343a42;
+  --bg: #0e1214; --sidebar-bg: #090b0c; --card-bg: #18201f; --border: #2c3c38;
   --text: #dbf8e1; --muted: #7cab89;
   --green: #22c55e; --green-bg: rgba(34, 197, 94, 0.14);
   --red: #ff4d6a; --red-bg: rgba(255, 77, 106, 0.14);
@@ -128,7 +128,7 @@ body[data-theme="dark-hacker"] {
 /* Lava — laranja neon entrando em vermelho, fundo escuro puxado pro marrom
    bem profundo. */
 body[data-theme="dark-lava"] {
-  --bg: #14171c; --sidebar-bg: #0d0f13; --card-bg: #1f2329; --border: #343a42;
+  --bg: #151213; --sidebar-bg: #0e0b0d; --card-bg: #211c1c; --border: #3a3130;
   --text: #fceee3; --muted: #c2967d;
   --green: #4ade80; --green-bg: rgba(74, 222, 128, 0.14);
   --red: #ff4444; --red-bg: rgba(255, 68, 68, 0.14);
@@ -138,7 +138,7 @@ body[data-theme="dark-lava"] {
 
 /* Fúcsia — rosa neon entrando em magenta profundo. */
 body[data-theme="dark-fucsia"] {
-  --bg: #14171c; --sidebar-bg: #0d0f13; --card-bg: #1f2329; --border: #343a42;
+  --bg: #151219; --sidebar-bg: #0e0b11; --card-bg: #211b25; --border: #3b303e;
   --text: #fbe7f4; --muted: #c68bb0;
   --green: #4ade80; --green-bg: rgba(74, 222, 128, 0.14);
   --red: #ff4444; --red-bg: rgba(255, 68, 68, 0.14);
