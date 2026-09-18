@@ -103,7 +103,6 @@ body[data-theme="dark-nebulosa"] {
   --red: #f43f5e; --red-bg: rgba(244, 63, 94, 0.14);
   --accent: #a855f7;
   --accent-gradient: linear-gradient(135deg, #4f7df7 0%, #a855f7 55%, #ec4899 100%);
-  --accent-text: #eef1f6;
 }
 
 /* Cyber — ciano neon entrando em azul/índigo, visual de terminal high-tech. */
@@ -720,6 +719,7 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
 }
 
 .bet-card {
+  min-width: 0;
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 14px;
