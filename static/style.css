@@ -10,6 +10,7 @@
   --red: #d94436;
   --red-bg: #fbe9e7;
   --accent: #6fa72e;
+  --accent-text: #12151f;
   --radius: 14px;
   --font-family: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-family: var(--font-family);
@@ -27,6 +28,7 @@ body[data-theme="light-oceano"] {
   --text: #0f2733; --muted: #5f7d89;
   --green: #2f9e6e; --green-bg: #dcf3e7; --red: #d9534f; --red-bg: #fbe6e5;
   --accent: #1d7ea6;
+  --accent-text: #eef1f6;
 }
 body[data-theme="light-terracota"] {
   --bg: #faf3ea; --sidebar-bg: #2b1d14; --card-bg: #fffaf3; --border: #ecdfcd;
@@ -39,12 +41,14 @@ body[data-theme="light-ameixa"] {
   --text: #241b30; --muted: #7c6f8d;
   --green: #4c9a6a; --green-bg: #e2f2e7; --red: #c14d63; --red-bg: #f7e5ea;
   --accent: #7c4dab;
+  --accent-text: #eef1f6;
 }
 body[data-theme="light-floresta"] {
   --bg: #f3f1e9; --sidebar-bg: #1b2b1e; --card-bg: #fdfcf7; --border: #e2ddc9;
   --text: #1b2b1e; --muted: #71806f;
   --green: #3f7d4a; --green-bg: #dfeee0; --red: #b5533f; --red-bg: #f3e2dc;
   --accent: #2f6b3a;
+  --accent-text: #eef1f6;
 }
 
 /* escuros (azulado escuro, nunca preto puro) */
@@ -583,7 +587,7 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
 
 .new-bet-btn {
   background: var(--accent);
-  color: white;
+  color: var(--accent-text);
   border: none;
   border-radius: 999px;
   padding: 10px 20px;
@@ -727,14 +731,14 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   justify-content: space-between;
   gap: 12px;
   padding: 13px 16px;
-  background: var(--sidebar-bg);
+  background: var(--accent);
   border-radius: 13px 13px 0 0;
   cursor: pointer;
   user-select: none;
 }
 .bet-card-chevron {
   flex-shrink: 0;
-  color: #eef1f6;
+  color: var(--accent-text);
   opacity: 0.55;
   font-size: 12px;
   transition: transform 0.18s ease;
@@ -752,7 +756,7 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
 .bet-card-title {
   font-size: 14.5px;
   font-weight: 600;
-  color: #eef1f6;
+  color: var(--accent-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
