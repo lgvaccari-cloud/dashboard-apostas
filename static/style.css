@@ -732,14 +732,14 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   justify-content: space-between;
   gap: 12px;
   padding: 13px 16px;
-  background: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--card-bg));
   border-radius: 13px 13px 0 0;
   cursor: pointer;
   user-select: none;
 }
 .bet-card-chevron {
   flex-shrink: 0;
-  color: var(--accent-text);
+  color: var(--accent);
   opacity: 0.55;
   font-size: 12px;
   transition: transform 0.18s ease;
@@ -757,7 +757,7 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
 .bet-card-title {
   font-size: 14.5px;
   font-weight: 600;
-  color: var(--accent-text);
+  color: var(--accent);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
