@@ -2530,6 +2530,12 @@ function renderChart(resolvedBets) {
   const ctx = document.getElementById("results-chart").getContext("2d");
   if (chartInstance) chartInstance.destroy();
 
+  const temaAtual = THEMES.find(t => t.id === CURRENT_THEME) || THEMES[0];
+  const gridColor = temaAtual.group !== "light" ? "rgba(255,255,255,0.08)" : "#eef1f6";
+  const tickColor = getComputedStyle(document.body).getPropertyValue("--muted").trim() || "#7a8494";
+  const corVerde = getComputedStyle(document.body).getPropertyValue("--green").trim() || "#8bc34a";
+  const corVermelha = getComputedStyle(document.body).getPropertyValue("--red").trim() || "#e2453c";
+
   // desenha o valor de cada barra em cima dela — só quando um mês específico
   // está filtrado (com muitos dias juntos, os números viram bagunça), e só
   // fora do mobile (a tela é estreita demais pra caber os números)
@@ -2548,17 +2554,13 @@ function renderChart(resolvedBets) {
       meta.data.forEach((bar, i) => {
         const value = dataset.data[i];
         const label = SHOW_BRL ? fmtBRL(value, true) : fmtUnits(value, true);
-        c.fillStyle = value >= 0 ? "#2e7d32" : "#c62828";
+        c.fillStyle = value >= 0 ? corVerde : corVermelha;
         const y = value >= 0 ? bar.y - 6 : bar.y + 16;
         c.fillText(label, bar.x, y);
       });
       c.restore();
     },
   };
-
-  const temaAtual = THEMES.find(t => t.id === CURRENT_THEME) || THEMES[0];
-  const gridColor = temaAtual.group !== "light" ? "rgba(255,255,255,0.08)" : "#eef1f6";
-  const tickColor = getComputedStyle(document.body).getPropertyValue("--muted").trim() || "#7a8494";
 
   chartInstance = new Chart(ctx, {
     type: "bar",
@@ -2569,7 +2571,7 @@ function renderChart(resolvedBets) {
           type: "bar",
           label: "Resultado do dia",
           data: diarioDisplay,
-          backgroundColor: diarioDisplay.map(v => v >= 0 ? "#8bc34a" : "#e2453c"),
+          backgroundColor: diarioDisplay.map(v => v >= 0 ? corVerde : corVermelha),
           borderRadius: 4,
           order: 2,
           yAxisID: "y",
