@@ -32,18 +32,35 @@ EDITABLE_FIELDS = {
 }
 
 
+_cache_worksheets = {}  # nome_aba -> (objeto worksheet, timestamp)
+_CACHE_WORKSHEET_TTL_SEGUNDOS = 300  # 5 min — só pra não reabrir a planilha a cada clique
+
+
 def _get_or_create_worksheet(nome_aba, headers):
     """Pega uma aba pelo nome (ex: 'Tipsters', 'Casas'), criando com o
-    cabeçalho certo se ela ainda não existir na planilha."""
+    cabeçalho certo se ela ainda não existir na planilha.
+
+    Guarda o handle da aba em cache por alguns minutos — abrir a planilha
+    (client.open_by_key + achar a aba) são 2 chamadas de rede só pra isso,
+    e adicionar/remover/trocar status fazem essa busca toda vez. Sem esse
+    cache, cada clique ficava esperando essas 2 chamadas de novo antes
+    nem de começar a operação de verdade.
+    """
+    agora = time.time()
+    cacheado = _cache_worksheets.get(nome_aba)
+    if cacheado and (agora - cacheado[1]) < _CACHE_WORKSHEET_TTL_SEGUNDOS:
+        return cacheado[0]
+
     client = _get_client()
     sheet_id = os.environ["SHEET_ID"]
     sh = client.open_by_key(sheet_id)
     try:
-        return sh.worksheet(nome_aba)
+        ws = sh.worksheet(nome_aba)
     except gspread.exceptions.WorksheetNotFound:
         ws = sh.add_worksheet(title=nome_aba, rows=200, cols=max(len(headers), 2))
         ws.update(range_name="A1", values=[headers])
-        return ws
+    _cache_worksheets[nome_aba] = (ws, agora)
+    return ws
 
 
 # ---------- Cadastro de tipsters (Configurações > Tipsters) ----------
