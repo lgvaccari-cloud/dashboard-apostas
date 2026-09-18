@@ -420,7 +420,7 @@ function tryAutoSelectMonth() {
 // ---------- Chips de tipster (só aparecem com um mês selecionado) ----------
 function renderChips() {
   const bar = document.getElementById("tipster-filter-bar");
-  if (!ACTIVE_MES || CURRENT_VIEW === "ranking" || CURRENT_VIEW === "bancas" || CURRENT_VIEW === "config") {
+  if (!ACTIVE_MES || CURRENT_VIEW === "ranking" || CURRENT_VIEW === "bancas" || CURRENT_VIEW === "cadastro" || CURRENT_VIEW === "personalizacao") {
     bar.style.display = "none";
     return;
   }
@@ -468,7 +468,7 @@ document.getElementById("tipster-select").addEventListener("change", (e) => {
 // ---------- Chips de casa (só aparecem com um mês selecionado) ----------
 function renderCasaChips() {
   const bar = document.getElementById("casa-filter-bar");
-  if (!ACTIVE_MES || CURRENT_VIEW === "ranking" || CURRENT_VIEW === "bancas" || CURRENT_VIEW === "config") {
+  if (!ACTIVE_MES || CURRENT_VIEW === "ranking" || CURRENT_VIEW === "bancas" || CURRENT_VIEW === "cadastro" || CURRENT_VIEW === "personalizacao") {
     bar.style.display = "none";
     return;
   }
@@ -632,19 +632,21 @@ function switchView(view) {
   fecharMenuMobile();
   CURRENT_VIEW = view;
   // o filtro de Mês (global, em cima de todas as views) não faz sentido em
-  // Configurações — tema/fonte não são coisas que mudam por mês. Esconde
-  // tanto a versão desktop (os 3 dropdowns) quanto o botão "Filtros" do
-  // mobile que abre a gaveta deles.
-  document.getElementById("filters-row").style.display = view === "config" ? "none" : "";
-  document.getElementById("mobile-filters-toggle").style.display = view === "config" ? "none" : "";
-  ["geral", "historico", "ranking", "bancas", "config"].forEach(v => {
+  // Configurações nem Personalização — tema/fonte e cadastro de
+  // tipster/casa não são coisas que mudam por mês. Esconde tanto a versão
+  // desktop (os 3 dropdowns) quanto o botão "Filtros" do mobile.
+  const semFiltroDeMes = view === "cadastro" || view === "personalizacao";
+  document.getElementById("filters-row").style.display = semFiltroDeMes ? "none" : "";
+  document.getElementById("mobile-filters-toggle").style.display = semFiltroDeMes ? "none" : "";
+  ["geral", "historico", "ranking", "bancas", "cadastro", "personalizacao"].forEach(v => {
     document.getElementById(`view-${v}`).style.display = (v === view) ? "" : "none";
   });
   document.getElementById("nav-geral").classList.toggle("active", view === "geral");
   document.getElementById("nav-historico").classList.toggle("active", view === "historico");
   document.getElementById("nav-ranking").classList.toggle("active", view === "ranking");
   document.getElementById("nav-bancas").classList.toggle("active", view === "bancas");
-  document.getElementById("nav-config").classList.toggle("active", view === "config");
+  document.getElementById("nav-cadastro").classList.toggle("active", view === "cadastro");
+  document.getElementById("nav-personalizacao").classList.toggle("active", view === "personalizacao");
 
   renderChips();
   renderCasaChips();
@@ -662,7 +664,8 @@ function switchView(view) {
   if (view === "historico") renderHistorico();
   if (view === "ranking") renderRanking();
   if (view === "bancas") loadBancas();
-  if (view === "config") { renderThemeGrid(); renderFontGrid(); }
+  if (view === "personalizacao") { renderThemeGrid(); renderFontGrid(); }
+  if (view === "cadastro") { renderTipstersList(); renderCasasList(); }
 }
 
 // ---------- Menu mobile (hambúrguer) ----------
@@ -823,7 +826,8 @@ document.getElementById("nav-historico").addEventListener("click", () => {
 });
 document.getElementById("nav-ranking").addEventListener("click", () => switchView("ranking"));
 document.getElementById("nav-bancas").addEventListener("click", () => switchView("bancas"));
-document.getElementById("nav-config").addEventListener("click", () => switchView("config"));
+document.getElementById("nav-cadastro").addEventListener("click", () => switchView("cadastro"));
+document.getElementById("nav-personalizacao").addEventListener("click", () => switchView("personalizacao"));
 
 document.getElementById("card-aberto").addEventListener("click", () => {
   // "Em aberto" mostra TODAS as pendentes (hoje + futuro misturadas) — pra
