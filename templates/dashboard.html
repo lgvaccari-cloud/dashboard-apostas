@@ -344,6 +344,7 @@
       </div>
 
       <div id="view-config" style="display:none">
+        <h1 class="config-page-title">Personalização</h1>
         <div class="card">
           <h2 class="config-section-title">Temas — claros</h2>
           <p class="chart-sub">Escolha um tema pra mudar as cores do painel.</p>
@@ -360,6 +361,29 @@
           <h2 class="config-section-title">Fonte</h2>
           <p class="chart-sub">Escolha a fonte usada em todo o painel.</p>
           <div class="theme-grid" id="font-grid"></div>
+        </div>
+
+        <h1 class="config-page-title" style="margin-top:30px">Configurações</h1>
+        <div class="card">
+          <h2 class="config-section-title">Tipsters</h2>
+          <p class="chart-sub">Adicione um tipster pra ele já aparecer nos atalhos de "Nova aposta". Marcar como inativo só tira ele desses atalhos — o histórico e os filtros continuam mostrando as apostas dele normalmente.</p>
+          <div class="cadastro-add-row">
+            <input type="text" id="novo-tipster-input" placeholder="Nome do tipster">
+            <button type="button" class="modal-btn save" id="novo-tipster-btn">+ Adicionar</button>
+          </div>
+          <div id="tipsters-cadastro-feedback" class="cadastro-feedback"></div>
+          <div id="tipsters-list" class="cadastro-list"></div>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <h2 class="config-section-title">Casas</h2>
+          <p class="chart-sub">Casas de apostas cadastradas no sistema.</p>
+          <div class="cadastro-add-row">
+            <input type="text" id="nova-casa-input" placeholder="Nome da casa">
+            <button type="button" class="modal-btn save" id="nova-casa-btn">+ Adicionar</button>
+          </div>
+          <div id="casas-cadastro-feedback" class="cadastro-feedback"></div>
+          <div id="casas-list" class="cadastro-list"></div>
         </div>
       </div>
     </main>
