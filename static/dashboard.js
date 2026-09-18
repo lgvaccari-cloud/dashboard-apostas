@@ -10,6 +10,8 @@ const ICON_ALERTA = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" 
 const ICON_TARGET = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>`;
 
 let ALL_BETS = [];
+let TIPSTERS_REGISTRY = [];
+let CASAS_REGISTRY = [];
 let ACTIVE_TIPSTER = null;
 let ACTIVE_CASA = null;
 let NEW_BET_TIPO = "";
@@ -1450,11 +1452,22 @@ function renderPrintTipsterChips() {
   const container = document.getElementById("print-tipster-chips");
   if (!container) return;
   const mesEscolhido = document.getElementById("new-bet-print-mes").value;
-  const tipsters = [...new Set(
-    ALL_BETS.filter(b => !mesEscolhido || b.mes === mesEscolhido)
-      .map(b => (b.tipster || "").trim())
-      .filter(Boolean)
-  )].sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
+
+  // nomes que já apareceram em apostas do mês...
+  const doMes = ALL_BETS.filter(b => !mesEscolhido || b.mes === mesEscolhido)
+    .map(b => (b.tipster || "").trim())
+    .filter(Boolean);
+
+  // ...unidos com quem está Ativo no cadastro (Configurações > Tipsters),
+  // mesmo sem nenhuma aposta ainda — e qualquer um marcado Inativo lá some
+  // do atalho, mesmo que já tenha aposta esse mês.
+  const statusPorNome = {};
+  TIPSTERS_REGISTRY.forEach(t => { statusPorNome[t.nome.toLowerCase()] = t.status; });
+  const doRegistroAtivos = TIPSTERS_REGISTRY.filter(t => t.status === "Ativo").map(t => t.nome);
+
+  const tipsters = [...new Set([...doMes, ...doRegistroAtivos])]
+    .filter(nome => statusPorNome[nome.toLowerCase()] !== "Inativo")
+    .sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
 
   const valorAtual = document.getElementById("new-bet-print-caption").value.trim();
   container.innerHTML = tipsters.map(t => `
@@ -2649,3 +2662,163 @@ try {
 
 setToday();
 loadData();
+
+// ---------- Cadastro de Tipsters e Casas (Configurações) ----------
+async function carregarRegistros() {
+  try {
+    const [resT, resC] = await Promise.all([fetch("/api/tipsters"), fetch("/api/casas")]);
+    const dataT = await resT.json();
+    const dataC = await resC.json();
+    if (dataT.ok) TIPSTERS_REGISTRY = dataT.tipsters;
+    if (dataC.ok) CASAS_REGISTRY = dataC.casas;
+    renderPrintTipsterChips();
+    renderTipstersList();
+    renderCasasList();
+  } catch (e) {
+    // se falhar, os atalhos de tipster continuam funcionando só com o que
+    // já existe nas apostas (comportamento de antes desse cadastro existir)
+  }
+}
+carregarRegistros();
+
+function renderTipstersList() {
+  const container = document.getElementById("tipsters-list");
+  if (!container) return;
+  const ordenados = [...TIPSTERS_REGISTRY].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }));
+  if (!ordenados.length) {
+    container.innerHTML = `<p class="cadastro-vazio">Nenhum tipster cadastrado ainda.</p>`;
+    return;
+  }
+  container.innerHTML = ordenados.map(t => `
+    <div class="cadastro-item">
+      <span class="cadastro-item-nome">${esc(t.nome)}</span>
+      <button type="button" class="cadastro-status-toggle ${t.status === "Ativo" ? "ativo" : "inativo"}" data-nome="${escJs(t.nome)}" data-status="${t.status}">${t.status}</button>
+      <button type="button" class="cadastro-remove-btn" data-nome="${escJs(t.nome)}" title="Remover">✕</button>
+    </div>
+  `).join("");
+
+  container.querySelectorAll(".cadastro-status-toggle").forEach(btn => {
+    btn.addEventListener("click", () => alternarStatusTipster(btn.dataset.nome, btn.dataset.status));
+  });
+  container.querySelectorAll(".cadastro-remove-btn").forEach(btn => {
+    btn.addEventListener("click", () => removerTipster(btn.dataset.nome));
+  });
+}
+
+function renderCasasList() {
+  const container = document.getElementById("casas-list");
+  if (!container) return;
+  const ordenadas = [...CASAS_REGISTRY].sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
+  if (!ordenadas.length) {
+    container.innerHTML = `<p class="cadastro-vazio">Nenhuma casa cadastrada ainda.</p>`;
+    return;
+  }
+  container.innerHTML = ordenadas.map(nome => `
+    <div class="cadastro-item">
+      <span class="cadastro-item-nome">${esc(nome)}</span>
+      <button type="button" class="cadastro-remove-btn" data-nome="${escJs(nome)}" title="Remover">✕</button>
+    </div>
+  `).join("");
+
+  container.querySelectorAll(".cadastro-remove-btn").forEach(btn => {
+    btn.addEventListener("click", () => removerCasa(btn.dataset.nome));
+  });
+}
+
+function setCadastroFeedback(id, texto, ehErro) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = texto;
+  el.className = "cadastro-feedback" + (ehErro ? " erro" : "");
+}
+
+async function adicionarTipsterUI() {
+  const input = document.getElementById("novo-tipster-input");
+  const nome = input.value.trim();
+  if (!nome) return;
+  setCadastroFeedback("tipsters-cadastro-feedback", "");
+  try {
+    const res = await fetch("/api/tipsters", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nome }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Não consegui adicionar.");
+    input.value = "";
+    await carregarRegistros();
+  } catch (e) {
+    setCadastroFeedback("tipsters-cadastro-feedback", e.message, true);
+  }
+}
+document.getElementById("novo-tipster-btn").addEventListener("click", adicionarTipsterUI);
+document.getElementById("novo-tipster-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); adicionarTipsterUI(); }
+});
+
+async function alternarStatusTipster(nome, statusAtual) {
+  const novoStatus = statusAtual === "Ativo" ? "Inativo" : "Ativo";
+  try {
+    const res = await fetch("/api/tipsters/status", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nome, status: novoStatus }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Não consegui atualizar.");
+    await carregarRegistros();
+  } catch (e) {
+    setCadastroFeedback("tipsters-cadastro-feedback", e.message, true);
+  }
+}
+
+async function removerTipster(nome) {
+  if (!confirm(`Remover "${nome}" do cadastro? As apostas antigas dele continuam intactas no histórico.`)) return;
+  try {
+    const res = await fetch("/api/tipsters/remover", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nome }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Não consegui remover.");
+    await carregarRegistros();
+  } catch (e) {
+    setCadastroFeedback("tipsters-cadastro-feedback", e.message, true);
+  }
+}
+
+async function adicionarCasaUI() {
+  const input = document.getElementById("nova-casa-input");
+  const nome = input.value.trim();
+  if (!nome) return;
+  setCadastroFeedback("casas-cadastro-feedback", "");
+  try {
+    const res = await fetch("/api/casas", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nome }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Não consegui adicionar.");
+    input.value = "";
+    await carregarRegistros();
+  } catch (e) {
+    setCadastroFeedback("casas-cadastro-feedback", e.message, true);
+  }
+}
+document.getElementById("nova-casa-btn").addEventListener("click", adicionarCasaUI);
+document.getElementById("nova-casa-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); adicionarCasaUI(); }
+});
+
+async function removerCasa(nome) {
+  if (!confirm(`Remover "${nome}" do cadastro? As apostas antigas continuam intactas no histórico.`)) return;
+  try {
+    const res = await fetch("/api/casas/remover", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nome }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Não consegui remover.");
+    await carregarRegistros();
+  } catch (e) {
+    setCadastroFeedback("casas-cadastro-feedback", e.message, true);
+  }
+}
