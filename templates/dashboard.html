@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Planilheiro.bet</title>
   <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32.png') }}">
@@ -344,23 +344,62 @@
           </div>
         </section>
         <div class="card table-card">
+          <div class="table-card-head-row">
+            <p class="chart-sub" style="margin:0">Bancas cadastradas direto aqui no dashboard, por casa e por mês — não vêm da planilha.</p>
+            <button type="button" class="modal-btn save" id="nova-banca-btn">+ Nova banca</button>
+          </div>
           <table class="bets-table">
             <colgroup>
-              <col style="width:28%">
-              <col style="width:24%">
-              <col style="width:24%">
-              <col style="width:24%">
+              <col style="width:20%">
+              <col style="width:15%">
+              <col style="width:15%">
+              <col style="width:13%">
+              <col style="width:15%">
+              <col style="width:15%">
+              <col style="width:7%">
             </colgroup>
             <thead>
               <tr>
                 <th id="th-banca-casa">Casa</th>
-                <th id="th-banca-contas" class="col-center">Contas ativas</th>
-                <th id="th-banca-total" class="col-center">Banca somada</th>
+                <th id="th-banca-inicial" class="col-center">Banca inicial</th>
+                <th id="th-banca-atual" class="col-center">Banca atual</th>
+                <th id="th-banca-saques" class="col-center">Saques</th>
+                <th id="th-banca-rodando" class="col-center">Banca rodando</th>
                 <th id="th-banca-lucro">Lucro</th>
+                <th></th>
               </tr>
             </thead>
             <tbody id="bancas-table-body"></tbody>
           </table>
+        </div>
+      </div>
+
+      <div class="modal-overlay" id="banca-form-overlay" style="display:none">
+        <div class="modal-card">
+          <button type="button" class="modal-close-x" id="banca-form-close-x" title="Fechar" aria-label="Fechar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+          <h2 id="banca-form-title">Nova banca</h2>
+          <p class="chart-sub" id="banca-form-sub">—</p>
+          <div class="modal-grid">
+            <label class="modal-span-2">Casa
+              <select id="banca-form-casa"></select>
+            </label>
+            <label>Banca inicial do mês
+              <input type="text" id="banca-form-inicial" inputmode="decimal" placeholder="0,00">
+            </label>
+            <label>Banca atual do mês
+              <input type="text" id="banca-form-atual" inputmode="decimal" placeholder="0,00">
+            </label>
+            <label class="modal-span-2">Saques
+              <input type="text" id="banca-form-saques" inputmode="decimal" placeholder="0,00">
+            </label>
+          </div>
+          <div id="banca-form-feedback" class="cadastro-feedback"></div>
+          <div class="modal-actions">
+            <button type="button" class="modal-btn cancel" id="banca-form-cancel">Cancelar</button>
+            <button type="button" class="modal-btn save" id="banca-form-save">Salvar</button>
+          </div>
         </div>
       </div>
 
