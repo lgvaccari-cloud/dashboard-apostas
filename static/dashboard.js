@@ -2700,10 +2700,7 @@ async function carregarRegistros() {
     const dataC = await resC.json();
     if (dataT.ok) TIPSTERS_REGISTRY = dataT.tipsters;
     if (dataC.ok) CASAS_REGISTRY = dataC.casas;
-    renderPrintTipsterChips();
-    populateNewBetTipsterOptions();
-    renderTipstersList();
-    renderCasasList();
+    atualizarTelasDeCadastro();
   } catch (e) {
     // se falhar, os atalhos de tipster continuam funcionando só com o que
     // já existe nas apostas (comportamento de antes desse cadastro existir)
@@ -2772,6 +2769,16 @@ document.querySelectorAll("#novo-tipster-tipo-pre, #novo-tipster-tipo-live, #nov
   });
 });
 
+// Depois de qualquer mudança local (otimista) no cadastro, esses 4 lugares
+// da tela precisam refletir isso — centralizado aqui pra não repetir em
+// cada uma das 6 funções de adicionar/trocar/remover.
+function atualizarTelasDeCadastro() {
+  renderTipstersList();
+  renderCasasList();
+  renderPrintTipsterChips();
+  populateNewBetTipsterOptions();
+}
+
 async function adicionarTipsterUI() {
   const input = document.getElementById("novo-tipster-input");
   const nome = input.value.trim();
@@ -2781,18 +2788,28 @@ async function adicionarTipsterUI() {
     return;
   }
   setCadastroFeedback("tipsters-cadastro-feedback", "");
+
+  // atualiza a tela na hora (otimista) — não espera o servidor confirmar
+  // pra já mostrar o tipster novo na lista
+  const tipo = NOVO_TIPSTER_TIPO;
+  const novoItem = { nome, status: "Ativo", tipo };
+  TIPSTERS_REGISTRY.push(novoItem);
+  atualizarTelasDeCadastro();
+  input.value = "";
+  NOVO_TIPSTER_TIPO = "";
+  document.querySelectorAll("#novo-tipster-tipo-pre, #novo-tipster-tipo-live, #novo-tipster-tipo-ambos").forEach(b => b.classList.remove("active"));
+
   try {
     const res = await fetch("/api/tipsters", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nome, tipo: NOVO_TIPSTER_TIPO }),
+      body: JSON.stringify({ nome, tipo }),
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || "Não consegui adicionar.");
-    input.value = "";
-    NOVO_TIPSTER_TIPO = "";
-    document.querySelectorAll("#novo-tipster-tipo-pre, #novo-tipster-tipo-live, #novo-tipster-tipo-ambos").forEach(b => b.classList.remove("active"));
-    await carregarRegistros();
   } catch (e) {
+    // deu errado no servidor — desfaz a mudança otimista
+    TIPSTERS_REGISTRY = TIPSTERS_REGISTRY.filter(t => t !== novoItem);
+    atualizarTelasDeCadastro();
     setCadastroFeedback("tipsters-cadastro-feedback", e.message, true);
   }
 }
@@ -2803,6 +2820,12 @@ document.getElementById("novo-tipster-input").addEventListener("keydown", (e) =>
 
 async function alternarStatusTipster(nome, statusAtual) {
   const novoStatus = statusAtual === "Ativo" ? "Inativo" : "Ativo";
+  const item = TIPSTERS_REGISTRY.find(t => t.nome === nome);
+  if (!item) return;
+  const statusAnterior = item.status;
+  item.status = novoStatus; // otimista
+  atualizarTelasDeCadastro();
+
   try {
     const res = await fetch("/api/tipsters/status", {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -2810,14 +2833,20 @@ async function alternarStatusTipster(nome, statusAtual) {
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || "Não consegui atualizar.");
-    await carregarRegistros();
   } catch (e) {
+    item.status = statusAnterior; // desfaz
+    atualizarTelasDeCadastro();
     setCadastroFeedback("tipsters-cadastro-feedback", e.message, true);
   }
 }
 
 async function removerTipster(nome) {
   if (!confirm(`Remover "${nome}" do cadastro? As apostas antigas dele continuam intactas no histórico.`)) return;
+  const idx = TIPSTERS_REGISTRY.findIndex(t => t.nome === nome);
+  if (idx === -1) return;
+  const [removido] = TIPSTERS_REGISTRY.splice(idx, 1); // otimista
+  atualizarTelasDeCadastro();
+
   try {
     const res = await fetch("/api/tipsters/remover", {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -2825,8 +2854,9 @@ async function removerTipster(nome) {
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || "Não consegui remover.");
-    await carregarRegistros();
   } catch (e) {
+    TIPSTERS_REGISTRY.splice(idx, 0, removido); // devolve no mesmo lugar
+    atualizarTelasDeCadastro();
     setCadastroFeedback("tipsters-cadastro-feedback", e.message, true);
   }
 }
@@ -2836,6 +2866,11 @@ async function adicionarCasaUI() {
   const nome = input.value.trim();
   if (!nome) return;
   setCadastroFeedback("casas-cadastro-feedback", "");
+
+  CASAS_REGISTRY.push(nome); // otimista
+  atualizarTelasDeCadastro();
+  input.value = "";
+
   try {
     const res = await fetch("/api/casas", {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -2843,9 +2878,9 @@ async function adicionarCasaUI() {
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || "Não consegui adicionar.");
-    input.value = "";
-    await carregarRegistros();
   } catch (e) {
+    CASAS_REGISTRY = CASAS_REGISTRY.filter(c => c !== nome);
+    atualizarTelasDeCadastro();
     setCadastroFeedback("casas-cadastro-feedback", e.message, true);
   }
 }
@@ -2856,6 +2891,11 @@ document.getElementById("nova-casa-input").addEventListener("keydown", (e) => {
 
 async function removerCasa(nome) {
   if (!confirm(`Remover "${nome}" do cadastro? As apostas antigas continuam intactas no histórico.`)) return;
+  const idx = CASAS_REGISTRY.indexOf(nome);
+  if (idx === -1) return;
+  CASAS_REGISTRY.splice(idx, 1); // otimista
+  atualizarTelasDeCadastro();
+
   try {
     const res = await fetch("/api/casas/remover", {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -2863,8 +2903,9 @@ async function removerCasa(nome) {
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || "Não consegui remover.");
-    await carregarRegistros();
   } catch (e) {
+    CASAS_REGISTRY.splice(idx, 0, nome); // devolve no mesmo lugar
+    atualizarTelasDeCadastro();
     setCadastroFeedback("casas-cadastro-feedback", e.message, true);
   }
 }
