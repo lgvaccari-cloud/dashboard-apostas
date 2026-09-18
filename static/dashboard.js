@@ -2724,7 +2724,7 @@ function renderCalendarView() {
       <div class="calendar-day ${cls}">
         <span class="cd-num">${dia}</span>
         <span class="cd-val">${fmtDual(uni, reais, true)}</span>
-        <span class="cd-ops">${ops} op${ops === 1 ? "" : "s"}</span>
+        <span class="cd-ops">${ops} aposta${ops === 1 ? "" : "s"}</span>
       </div>
     `;
   }
