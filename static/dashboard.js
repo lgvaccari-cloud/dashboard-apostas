@@ -1438,11 +1438,18 @@ function populateNewBetTipsterOptions() {
   if (!select) return;
   const mesEscolhido = document.getElementById("new-bet-mes").value;
   const anterior = select.value;
-  const tipsters = [...new Set(
-    ALL_BETS.filter(b => !mesEscolhido || b.mes === mesEscolhido)
-      .map(b => (b.tipster || "").trim())
-      .filter(Boolean)
-  )].sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
+
+  const doMes = ALL_BETS.filter(b => !mesEscolhido || b.mes === mesEscolhido)
+    .map(b => (b.tipster || "").trim())
+    .filter(Boolean);
+
+  const statusPorNome = {};
+  TIPSTERS_REGISTRY.forEach(t => { statusPorNome[t.nome.toLowerCase()] = t.status; });
+  const doRegistroAtivos = TIPSTERS_REGISTRY.filter(t => t.status === "Ativo").map(t => t.nome);
+
+  const tipsters = [...new Set([...doMes, ...doRegistroAtivos])]
+    .filter(nome => statusPorNome[nome.toLowerCase()] !== "Inativo")
+    .sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
 
   select.innerHTML = `<option value="">Sem tipster</option>` +
     tipsters.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join("");
@@ -1639,7 +1646,25 @@ function handlePrintResult(result, mes) {
 
   if (result.status === "ok") {
     const linhasHtml = "✅ " + (result.linhas || []).join("<br>✅ ");
-    const pendentes = (result.registros || []).filter(r => r.horario_pendente);
+    let pendentes = (result.registros || []).filter(r => r.horario_pendente);
+
+    // se o tipster desse print é só Live (nem Pré, nem "Pré + Live"), o
+    // horário nunca significa "hora do jogo" — significa "hora que a
+    // aposta foi feita", que já é agora mesmo. Não faz sentido perguntar;
+    // preenche direto com a hora atual, igual o bot já faz sozinho pro
+    // Telegram com os tipsters de tipo fixo.
+    if (pendentes.length) {
+      const nomeTipsterPrint = document.getElementById("new-bet-print-caption").value.trim();
+      const infoTipster = TIPSTERS_REGISTRY.find(t => t.nome.toLowerCase() === nomeTipsterPrint.toLowerCase());
+      if (infoTipster && infoTipster.tipo === "Live") {
+        const agora = horaAtualHHMM();
+        Promise.all(pendentes.map(p => fetch("/api/update_bet", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mes, row: p.row, updates: { horario: agora } }),
+        }))).then(() => refreshMes(mes));
+        pendentes = [];
+      }
+    }
 
     if (!pendentes.length) {
       setPrintFeedback(linhasHtml);
@@ -2676,6 +2701,7 @@ async function carregarRegistros() {
     if (dataT.ok) TIPSTERS_REGISTRY = dataT.tipsters;
     if (dataC.ok) CASAS_REGISTRY = dataC.casas;
     renderPrintTipsterChips();
+    populateNewBetTipsterOptions();
     renderTipstersList();
     renderCasasList();
   } catch (e) {
@@ -2695,7 +2721,7 @@ function renderTipstersList() {
   }
   container.innerHTML = ordenados.map(t => `
     <div class="cadastro-item">
-      <span class="cadastro-item-nome">${esc(t.nome)}</span>
+      <span class="cadastro-item-nome">${esc(t.nome)}${t.tipo ? `<span class="cadastro-item-tipo">${esc(t.tipo)}</span>` : ""}</span>
       <button type="button" class="cadastro-status-toggle ${t.status === "Ativo" ? "ativo" : "inativo"}" data-nome="${escJs(t.nome)}" data-status="${t.status}">${t.status}</button>
       <button type="button" class="cadastro-remove-btn" data-nome="${escJs(t.nome)}" title="Remover">✕</button>
     </div>
@@ -2736,19 +2762,35 @@ function setCadastroFeedback(id, texto, ehErro) {
   el.className = "cadastro-feedback" + (ehErro ? " erro" : "");
 }
 
+let NOVO_TIPSTER_TIPO = "";
+document.querySelectorAll("#novo-tipster-tipo-pre, #novo-tipster-tipo-live, #novo-tipster-tipo-ambos").forEach(btn => {
+  btn.addEventListener("click", () => {
+    NOVO_TIPSTER_TIPO = btn.dataset.tipo;
+    document.querySelectorAll("#novo-tipster-tipo-pre, #novo-tipster-tipo-live, #novo-tipster-tipo-ambos").forEach(b => {
+      b.classList.toggle("active", b === btn);
+    });
+  });
+});
+
 async function adicionarTipsterUI() {
   const input = document.getElementById("novo-tipster-input");
   const nome = input.value.trim();
   if (!nome) return;
+  if (!NOVO_TIPSTER_TIPO) {
+    setCadastroFeedback("tipsters-cadastro-feedback", "Escolhe se ele é Pré, Live ou Pré + Live antes de adicionar.", true);
+    return;
+  }
   setCadastroFeedback("tipsters-cadastro-feedback", "");
   try {
     const res = await fetch("/api/tipsters", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nome }),
+      body: JSON.stringify({ nome, tipo: NOVO_TIPSTER_TIPO }),
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || "Não consegui adicionar.");
     input.value = "";
+    NOVO_TIPSTER_TIPO = "";
+    document.querySelectorAll("#novo-tipster-tipo-pre, #novo-tipster-tipo-live, #novo-tipster-tipo-ambos").forEach(b => b.classList.remove("active"));
     await carregarRegistros();
   } catch (e) {
     setCadastroFeedback("tipsters-cadastro-feedback", e.message, true);

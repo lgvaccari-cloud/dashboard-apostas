@@ -950,6 +950,14 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   gap: 8px;
   margin-top: 14px;
 }
+.cadastro-tipo-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.cadastro-tipo-row .modal-btn { margin-left: auto; }
 .cadastro-add-row input {
   flex: 1;
   padding: 9px 12px;
@@ -974,6 +982,14 @@ body.dark-mode .pending-banner { background: rgba(255, 214, 92, 0.1); }
   border: 1px solid var(--border);
 }
 .cadastro-item-nome { flex: 1; font-size: 13.5px; color: var(--text); }
+.cadastro-item-tipo {
+  margin-left: 8px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
 .cadastro-status-toggle {
   flex-shrink: 0;
   padding: 4px 12px;
