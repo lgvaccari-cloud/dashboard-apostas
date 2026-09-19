@@ -1,9 +1,11 @@
 import os
+import json
 from functools import wraps
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, Response
 import requests
 
 from sheets import fetch_bets, fetch_bets_for_mes, update_bet, add_bet, fetch_bancas_for_mes, update_banca, delete_bet, listar_tipsters, adicionar_tipster, atualizar_status_tipster, remover_tipster, listar_casas, adicionar_casa, remover_casa
+from bancas_store import listar_bancas_mes, salvar_banca, remover_banca
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "troque-essa-chave-em-producao")
@@ -138,6 +140,43 @@ def api_bancas(mes):
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
+@app.route("/api/exportar_apostas")
+@login_required
+def api_exportar_apostas():
+    """Baixa todas as apostas (todos os meses) num JSON — pensado pra dar
+    pra importar depois na plataforma multiusuário dos amigos, que usa
+    esses mesmos nomes de campo (ver models.py de lá)."""
+    try:
+        bets = fetch_bets(force=True)
+        exportado = [
+            {
+                "mes": b["mes"],
+                "data_iso": b["data_iso"],
+                "horario": b["horario"],
+                "casa": b["casa"],
+                "tipster": b["tipster"],
+                "aposta": b["aposta"],
+                "mercado": b["mercado"],
+                "tipo": b["tipo"],
+                "odd": b["odd"],
+                "stake": b["stake"],
+                "stake_reais": b["stake_reais"],
+                "resultado": b["resultado"],
+                "lucro_uni": b["lucro_uni"],
+                "lucro_reais": b["lucro_reais"],
+            }
+            for b in bets
+        ]
+        corpo = json.dumps(exportado, ensure_ascii=False, indent=2)
+        return Response(
+            corpo,
+            mimetype="application/json",
+            headers={"Content-Disposition": "attachment; filename=apostas-exportadas.json"},
+        )
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @app.route("/api/update_banca", methods=["POST"])
 @login_required
 def api_update_banca():
@@ -149,6 +188,50 @@ def api_update_banca():
         valor = payload["valor"]
         update_banca(mes, row, valor)
         return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/bancas-manual/<path:mes>")
+@login_required
+def api_bancas_manual(mes):
+    """Bancas cadastradas manualmente no dashboard (sem planilha) pro mês indicado."""
+    try:
+        return jsonify({"ok": True, "bancas": listar_bancas_mes(mes)})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/bancas-manual/<path:mes>", methods=["POST"])
+@login_required
+def api_bancas_manual_salvar(mes):
+    """Cria ou atualiza (upsert por Casa) uma banca manual desse mês."""
+    try:
+        payload = request.get_json(force=True)
+        casa = (payload.get("casa") or "").strip()
+        if not casa:
+            return jsonify({"ok": False, "error": "Informe a casa."}), 400
+        linha = salvar_banca(
+            mes,
+            casa,
+            payload.get("banca_inicial"),
+            payload.get("banca_atual"),
+            payload.get("saques"),
+        )
+        return jsonify({"ok": True, "banca": linha})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/bancas-manual/remover", methods=["POST"])
+@login_required
+def api_bancas_manual_remover():
+    try:
+        payload = request.get_json(force=True)
+        mes = payload["mes"]
+        casa = payload["casa"]
+        ok = remover_banca(mes, casa)
+        return jsonify({"ok": ok})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
